@@ -1,6 +1,6 @@
 package com.kubrafelek.brokagefirm.controller;
 
-import com.kubrafelek.brokagefirm.constants.SwaggerConstants;
+import com.kubrafelek.brokagefirm.constants.Constants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -13,14 +13,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@Tag(name = SwaggerConstants.Tags.API_INFO_NAME, description = SwaggerConstants.Tags.API_INFO_DESC)
+@Tag(name = Constants.Tags.API_INFO_NAME, description = Constants.Tags.API_INFO_DESC)
 public class ApiInfoController {
 
     @GetMapping("/")
-    @Operation(summary = SwaggerConstants.OperationSummaries.API_INFORMATION,
-            description = SwaggerConstants.OperationDescriptions.API_INFO_DESC)
+    @Operation(summary = Constants.OperationSummaries.API_INFORMATION,
+            description = Constants.OperationDescriptions.API_INFO_DESC)
     @ApiResponses(value = {
-            @ApiResponse(responseCode = SwaggerConstants.ResponseCodes.OK, description = SwaggerConstants.ResponseDescriptions.API_INFO_RETRIEVED_SUCCESSFULLY)
+            @ApiResponse(responseCode = Constants.ResponseCodes.OK, description = Constants.ResponseDescriptions.API_INFO_RETRIEVED_SUCCESSFULLY)
     })
     public ResponseEntity<Map<String, Object>> welcome() {
         Map<String, Object> response = new HashMap<>();
@@ -46,10 +46,10 @@ public class ApiInfoController {
     }
 
     @GetMapping("/health")
-    @Operation(summary = SwaggerConstants.OperationSummaries.HEALTH_CHECK,
-            description = SwaggerConstants.OperationDescriptions.HEALTH_CHECK_DESC)
+    @Operation(summary = Constants.OperationSummaries.HEALTH_CHECK,
+            description = Constants.OperationDescriptions.HEALTH_CHECK_DESC)
     @ApiResponses(value = {
-            @ApiResponse(responseCode = SwaggerConstants.ResponseCodes.OK, description = SwaggerConstants.ResponseDescriptions.SERVICE_HEALTHY)
+            @ApiResponse(responseCode = Constants.ResponseCodes.OK, description = Constants.ResponseDescriptions.SERVICE_HEALTHY)
     })
     public ResponseEntity<Map<String, String>> health() {
         Map<String, String> response = new HashMap<>();

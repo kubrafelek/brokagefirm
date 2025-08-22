@@ -8,15 +8,15 @@ public class LoginResponse {
     @Schema(description = "Response message", example = "Login successful")
     private String message;
 
-    @Schema(description = "Customer ID", example = "2")
-    private Long customerId;
+    @Schema(description = "User ID", example = "2")
+    private Long userId;
 
     @Schema(description = "Whether the user is an admin", example = "false")
     private Boolean isAdmin;
 
-    public LoginResponse(String message, Long customerId, Boolean isAdmin) {
+    public LoginResponse(String message, Long userId, Boolean isAdmin) {
         this.message = message;
-        this.customerId = customerId;
+        this.userId = userId;
         this.isAdmin = isAdmin;
     }
 
@@ -24,15 +24,23 @@ public class LoginResponse {
         return message;
     }
 
-    public Long getCustomerId() {
-        return customerId;
+    public void setMessage(String message) {
+        this.message = message;
     }
 
-    public void setCustomerId(Long customerId) {
-        this.customerId = customerId;
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public Boolean getIsAdmin() {
         return isAdmin;
+    }
+
+    public void setIsAdmin(Boolean isAdmin) {
+        this.isAdmin = isAdmin;
     }
 }

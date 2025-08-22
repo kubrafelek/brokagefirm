@@ -1,10 +1,10 @@
 package com.kubrafelek.brokagefirm.controller;
 
-import com.kubrafelek.brokagefirm.constants.SwaggerConstants;
+import com.kubrafelek.brokagefirm.constants.Constants;
 import com.kubrafelek.brokagefirm.dto.LoginRequest;
 import com.kubrafelek.brokagefirm.dto.LoginResponse;
-import com.kubrafelek.brokagefirm.entity.Customer;
-import com.kubrafelek.brokagefirm.service.CustomerService;
+import com.kubrafelek.brokagefirm.entity.User;
+import com.kubrafelek.brokagefirm.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -16,41 +16,41 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
-@Tag(name = SwaggerConstants.Tags.AUTHENTICATION_NAME, description = SwaggerConstants.Tags.AUTHENTICATION_DESC)
+@Tag(name = Constants.Tags.AUTHENTICATION_NAME, description = Constants.Tags.AUTHENTICATION_DESC)
 public class AuthController {
 
-    private final CustomerService customerService;
+    private final UserService userService;
 
-    public AuthController(CustomerService customerService) {
-        this.customerService = customerService;
+    public AuthController(UserService userService) {
+        this.userService = userService;
     }
 
     @PostMapping("/login")
-    @Operation(summary = SwaggerConstants.OperationSummaries.USER_LOGIN,
-               description = SwaggerConstants.OperationDescriptions.USER_LOGIN_DESC)
+    @Operation(summary = Constants.OperationSummaries.USER_LOGIN,
+               description = Constants.OperationDescriptions.USER_LOGIN_DESC)
     @ApiResponses(value = {
-            @ApiResponse(responseCode = SwaggerConstants.ResponseCodes.OK, description = SwaggerConstants.ResponseDescriptions.LOGIN_SUCCESSFUL),
-            @ApiResponse(responseCode = SwaggerConstants.ResponseCodes.UNAUTHORIZED, description = SwaggerConstants.ResponseDescriptions.INVALID_CREDENTIALS),
-            @ApiResponse(responseCode = SwaggerConstants.ResponseCodes.INTERNAL_SERVER_ERROR, description = SwaggerConstants.ResponseDescriptions.INTERNAL_SERVER_ERROR)
+            @ApiResponse(responseCode = Constants.ResponseCodes.OK, description = Constants.ResponseDescriptions.LOGIN_SUCCESSFUL),
+            @ApiResponse(responseCode = Constants.ResponseCodes.UNAUTHORIZED, description = Constants.ResponseDescriptions.INVALID_CREDENTIALS),
+            @ApiResponse(responseCode = Constants.ResponseCodes.INTERNAL_SERVER_ERROR, description = Constants.ResponseDescriptions.INTERNAL_SERVER_ERROR)
     })
     public ResponseEntity<LoginResponse> login(
-            @Parameter(description = SwaggerConstants.ParameterDescriptions.LOGIN_CREDENTIALS, required = true)
+            @Parameter(description = Constants.ParameterDescriptions.LOGIN_CREDENTIALS, required = true)
             @Valid @RequestBody LoginRequest request) {
         try {
-            Customer customer = customerService.authenticate(request.getUsername(), request.getPassword());
-            if (customer != null) {
+            User user = userService.authenticate(request.getUsername(), request.getPassword());
+            if (user != null) {
                 LoginResponse response = new LoginResponse(
-                    SwaggerConstants.SuccessMessages.LOGIN_SUCCESSFUL,
-                    customer.getId(),
-                    customer.getIsAdmin()
+                    Constants.SuccessMessages.LOGIN_SUCCESSFUL,
+                    user.getId(),
+                    user.isAdmin()
                 );
                 return ResponseEntity.ok(response);
             } else {
-                LoginResponse response = new LoginResponse(SwaggerConstants.ErrorMessages.INVALID_CREDENTIALS, null, null);
+                LoginResponse response = new LoginResponse(Constants.ErrorMessages.INVALID_CREDENTIALS, null, null);
                 return ResponseEntity.status(401).body(response);
             }
         } catch (Exception e) {
-            LoginResponse response = new LoginResponse(SwaggerConstants.ErrorMessages.LOGIN_FAILED + e.getMessage(), null, null);
+            LoginResponse response = new LoginResponse(Constants.ErrorMessages.LOGIN_FAILED + e.getMessage(), null, null);
             return ResponseEntity.status(500).body(response);
         }
     }

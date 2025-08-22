@@ -8,6 +8,6 @@ import java.util.Optional;
 
 @Repository
 public interface AssetRepository extends JpaRepository<Asset, Long> {
-    List<Asset> findByCustomerId(Long customerId);
-    Optional<Asset> findByCustomerIdAndAssetName(Long customerId, String assetName);
+    List<Asset> findByUserId(Long userId);
+    Optional<Asset> findByUserIdAndAssetName(Long userId, String assetName);
 }

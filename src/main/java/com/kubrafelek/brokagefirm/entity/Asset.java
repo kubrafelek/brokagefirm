@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 
 @Entity
 @Table(name = "assets", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"customer_id", "asset_name"})
+    @UniqueConstraint(columnNames = {"user_id", "asset_name"})
 })
 public class Asset {
 
@@ -16,9 +16,9 @@ public class Asset {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull(message = "Customer ID is required")
-    @Column(name = "customer_id")
-    private Long customerId;
+    @NotNull(message = "User ID is required")
+    @Column(name = "user_id")
+    private Long userId;
 
     @NotBlank(message = "Asset name is required")
     @Column(name = "asset_name")
@@ -36,27 +36,11 @@ public class Asset {
 
     public Asset() {}
 
-    public Asset(Long customerId, String assetName, BigDecimal size, BigDecimal usableSize) {
-        this.customerId = customerId;
+    public Asset(Long userId, String assetName, BigDecimal size, BigDecimal usableSize) {
+        this.userId = userId;
         this.assetName = assetName;
         this.size = size;
         this.usableSize = usableSize;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getCustomerId() {
-        return customerId;
-    }
-
-    public void setCustomerId(Long customerId) {
-        this.customerId = customerId;
     }
 
     public String getAssetName() {

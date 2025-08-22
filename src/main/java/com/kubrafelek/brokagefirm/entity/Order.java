@@ -17,9 +17,9 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull(message = "Customer ID is required")
-    @Column(name = "customer_id")
-    private Long customerId;
+    @NotNull(message = "User ID is required")
+    @Column(name = "user_id")
+    private Long userId;
 
     @NotBlank(message = "Asset name is required")
     @Column(name = "asset_name")
@@ -50,9 +50,9 @@ public class Order {
 
     public Order() {}
 
-    public Order(Long customerId, String assetName, OrderSide orderSide,
+    public Order(Long userId, String assetName, OrderSide orderSide,
                 BigDecimal size, BigDecimal price, OrderStatus status, LocalDateTime createDate) {
-        this.customerId = customerId;
+        this.userId = userId;
         this.assetName = assetName;
         this.orderSide = orderSide;
         this.size = size;
@@ -61,20 +61,12 @@ public class Order {
         this.createDate = createDate;
     }
 
-    public Long getId() {
-        return id;
-    }
-
     public void setId(Long id) {
         this.id = id;
     }
 
-    public Long getCustomerId() {
-        return customerId;
-    }
-
-    public void setCustomerId(Long customerId) {
-        this.customerId = customerId;
+    public Long getUserId() {
+        return userId;
     }
 
     public String getAssetName() {

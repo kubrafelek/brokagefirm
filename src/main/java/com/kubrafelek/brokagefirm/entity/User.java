@@ -1,12 +1,13 @@
 package com.kubrafelek.brokagefirm.entity;
 
+import com.kubrafelek.brokagefirm.enums.Role;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 @Entity
-@Table(name = "customers")
-public class Customer {
+@Table(name = "users")
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,15 +20,17 @@ public class Customer {
     @NotBlank(message = "Password is required")
     private String password;
 
-    @NotNull(message = "Admin flag is required")
-    private Boolean isAdmin = false;
+    @NotNull(message = "Role is required")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role")
+    private Role role = Role.CUSTOMER;
 
-    public Customer() {}
+    public User() {}
 
-    public Customer(String username, String password, Boolean isAdmin) {
+    public User(String username, String password, Role role) {
         this.username = username;
         this.password = password;
-        this.isAdmin = isAdmin;
+        this.role = role;
     }
 
     public Long getId() {
@@ -54,7 +57,15 @@ public class Customer {
         this.password = password;
     }
 
-    public Boolean getIsAdmin() {
-        return isAdmin;
+    public Role getRole() {
+        return role;
+    }
+
+    public boolean isAdmin() {
+        return this.role == Role.ADMIN;
+    }
+
+    public boolean isCustomer() {
+        return this.role == Role.CUSTOMER;
     }
 }
