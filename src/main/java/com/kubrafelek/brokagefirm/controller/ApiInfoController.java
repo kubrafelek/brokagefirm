@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.view.RedirectView;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,10 +27,5 @@ public class ApiInfoController {
         response.put("status", "UP");
         response.put("timestamp", java.time.LocalDateTime.now().toString());
         return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/")
-    public RedirectView home() {
-        return new RedirectView("/swagger-ui/index.html");
     }
 }

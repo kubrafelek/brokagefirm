@@ -5,28 +5,44 @@ import com.kubrafelek.brokagefirm.enums.Role;
 import com.kubrafelek.brokagefirm.exception.UsernameAlreadyExistsException;
 import com.kubrafelek.brokagefirm.repository.UserRepository;
 import com.kubrafelek.brokagefirm.constants.Constants;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
 public class UserService {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
+
+    public UserService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     public User authenticate(String username, String password) {
+        logger.info("Attempting to authenticate user: {}", username);
+
         Optional<User> userOpt = userRepository.findByUsername(username);
         if (userOpt.isPresent()) {
             User user = userOpt.get();
-            if (passwordEncoder.matches(password, user.getPassword())) {
+            logger.info("User found in database: {}, role: {}", username, user.getRole());
+
+            boolean passwordMatches = passwordEncoder.matches(password, user.getPassword());
+            logger.info("Password matches for user {}: {}", username, passwordMatches);
+
+            if (passwordMatches) {
+                logger.info("User authenticated successfully: {}", username);
                 return user;
+            } else {
+                logger.warn("Password mismatch for user: {}", username);
             }
+        } else {
+            logger.warn("User not found: {}", username);
         }
         return null;
     }
