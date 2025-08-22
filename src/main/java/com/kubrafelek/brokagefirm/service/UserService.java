@@ -5,8 +5,6 @@ import com.kubrafelek.brokagefirm.enums.Role;
 import com.kubrafelek.brokagefirm.exception.UsernameAlreadyExistsException;
 import com.kubrafelek.brokagefirm.repository.UserRepository;
 import com.kubrafelek.brokagefirm.constants.Constants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.Optional;
@@ -14,7 +12,6 @@ import java.util.Optional;
 @Service
 public class UserService {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
