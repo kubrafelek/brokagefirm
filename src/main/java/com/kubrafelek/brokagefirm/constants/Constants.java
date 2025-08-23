@@ -12,7 +12,6 @@ public final class Constants {
     }
 
     public static final class ResponseDescriptions {
-        public static final String API_INFO_RETRIEVED_SUCCESSFULLY = "API information retrieved successfully";
         public static final String ASSETS_RETRIEVED_SUCCESSFULLY = "Assets retrieved successfully";
         public static final String CUSTOMER_ID_REQUIRED_ADMIN = "Customer ID is required for admin users";
         public static final String INTERNAL_SERVER_ERROR = "Internal server error";
@@ -34,7 +33,6 @@ public final class Constants {
     }
 
     public static final class OperationSummaries {
-        public static final String API_INFORMATION = "API information";
         public static final String CANCEL_ORDER = "Cancel an order";
         public static final String CREATE_NEW_ORDER = "Create a new order";
         public static final String HEALTH_CHECK = "Health check";
@@ -46,7 +44,6 @@ public final class Constants {
     }
 
     public static final class OperationDescriptions {
-        public static final String API_INFO_DESC = "Get API information, available endpoints, test accounts, and usage examples";
         public static final String CANCEL_ORDER_DESC = "Cancel a pending order. Customers can only cancel their own orders, while admins can cancel any order.";
         public static final String CREATE_ORDER_DESC = "Create a new trading order for any customer. Only admin users can create orders.";
         public static final String HEALTH_CHECK_DESC = "Check the health status of the API";
@@ -58,8 +55,6 @@ public final class Constants {
     }
 
     public static final class ParameterDescriptions {
-        public static final String CUSTOMER_ID_ADMIN_REQUIRED = "Customer ID (required for admin users, ignored for regular customers)";
-        public static final String CUSTOMER_ID_FILTER = "Customer ID to filter orders (admin only)";
         public static final String END_DATE_FILTER = "End date for filtering orders (ISO datetime format)";
         public static final String LOGIN_CREDENTIALS = "Login credentials";
         public static final String MATCH_ORDER_REQUEST = "Match order request";
@@ -100,9 +95,7 @@ public final class Constants {
         public static final String ONLY_PENDING_ORDERS_CAN_BE_MATCHED = "Only pending orders can be matched";
         public static final String ORDER_NOT_FOUND = "Order not found";
         public static final String YOU_CAN_ONLY_CANCEL_YOUR_OWN_ORDERS = "You can only cancel your own orders";
-        public static final String YOU_CAN_ONLY_CREATE_ORDERS_FOR_YOURSELF = "You can only create orders for yourself";
         public static final String ASSET_NOT_FOUND = "Asset not found";
-        public static final String USER_NOT_FOUND = "User not found";
         public static final String USERNAME_ALREADY_EXISTS = "Username already exists";
     }
 
