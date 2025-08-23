@@ -56,8 +56,9 @@ public class OrderController {
                 return ResponseEntity.status(401).body(Constants.ErrorMessages.INVALID_CREDENTIALS);
             }
 
-            if (!user.isAdmin() && !user.getId().equals(request.getUserId())) {
-                return ResponseEntity.status(403).body(Constants.ErrorMessages.YOU_CAN_ONLY_CREATE_ORDERS_FOR_YOURSELF);
+            // Only admin users can create orders for any customer
+            if (!user.isAdmin()) {
+                return ResponseEntity.status(403).body(Constants.ErrorMessages.ONLY_ADMIN_USERS_CAN_CREATE_ORDERS);
             }
 
             Order order = orderService.createOrder(

@@ -160,7 +160,7 @@ class ErrorHandlingIT extends BaseIT {
                 .headers(customerHeaders)
                 .content(toJson(new CreateOrderRequest(
                         CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE))))
-                .andExpect(status().isOk());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -176,8 +176,8 @@ class ErrorHandlingIT extends BaseIT {
                 .headers(customerHeaders)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(orderRequest)))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("Failed to create order: Insufficient usable balance")));
+                .andExpect(status().isForbidden())
+                .andExpect(content().string(containsString("Only admin users can create orders for customers")));
     }
 
     @Test
@@ -193,8 +193,8 @@ class ErrorHandlingIT extends BaseIT {
                 .headers(customerHeaders)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(oversellOrder)))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("Failed to create order: Insufficient usable balance")));
+                .andExpect(status().isForbidden())
+                .andExpect(content().string(containsString("Only admin users can create orders for customers")));
 
         // Customer1 tries to sell an asset they don't have
         CreateOrderRequest nonExistentAssetOrder = new CreateOrderRequest(
@@ -204,7 +204,7 @@ class ErrorHandlingIT extends BaseIT {
                 .headers(customerHeaders)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(nonExistentAssetOrder)))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("Failed to create order: Insufficient usable balance")));
+                .andExpect(status().isForbidden())
+                .andExpect(content().string(containsString("Only admin users can create orders for customers")));
     }
 }

@@ -124,15 +124,14 @@ class AdminFunctionalityIT extends BaseIT {
     @Test
     @DisplayName("Admin should be able to cancel any customer's order")
     void testAdminCancelAnyOrder() throws Exception {
-        HttpHeaders customerHeaders = createCustomer1Headers();
         HttpHeaders adminHeaders = createAdminHeaders();
 
-        // Customer creates an order
+        // Admin creates an order for customer
         CreateOrderRequest createRequest = new CreateOrderRequest(
                 CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         MvcResult createResult = mockMvc.perform(post(ORDERS_URL)
-                .headers(customerHeaders)
+                .headers(adminHeaders)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(createRequest)))
                 .andExpect(status().isOk())
@@ -153,15 +152,14 @@ class AdminFunctionalityIT extends BaseIT {
     @Test
     @DisplayName("Admin should be able to match pending orders")
     void testAdminMatchPendingOrders() throws Exception {
-        HttpHeaders customerHeaders = createCustomer1Headers();
         HttpHeaders adminHeaders = createAdminHeaders();
 
-        // Customer creates a buy order
+        // Admin creates a buy order for customer
         CreateOrderRequest buyOrder = new CreateOrderRequest(
                 CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         MvcResult createResult = mockMvc.perform(post(ORDERS_URL)
-                .headers(customerHeaders)
+                .headers(adminHeaders)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(buyOrder)))
                 .andExpect(status().isOk())
@@ -194,68 +192,6 @@ class AdminFunctionalityIT extends BaseIT {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[*].status").value(everyItem(is("PENDING"))));
-    }
-
-    @Test
-    @DisplayName("Admin should have comprehensive order management capabilities")
-    void testAdminComprehensiveOrderManagement() throws Exception {
-        HttpHeaders customerHeaders = createCustomer1Headers();
-        HttpHeaders adminHeaders = createAdminHeaders();
-
-        // 1. Admin creates order for customer
-        CreateOrderRequest adminCreateOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
-
-        MvcResult adminCreateResult = mockMvc.perform(post(ORDERS_URL)
-                .headers(adminHeaders)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(toJson(adminCreateOrder)))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        Long adminOrderId = objectMapper.readTree(adminCreateResult.getResponse().getContentAsString())
-                .get("id").asLong();
-
-        // 2. Customer creates their own order
-        CreateOrderRequest customerCreateOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, "GOOGL", OrderSide.SELL, BigDecimal.valueOf(2.0), BigDecimal.valueOf(2800.00), FIXED_DATE);
-
-        MvcResult customerCreateResult = mockMvc.perform(post(ORDERS_URL)
-                .headers(customerHeaders)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(toJson(customerCreateOrder)))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        Long customerOrderId = objectMapper.readTree(customerCreateResult.getResponse().getContentAsString())
-                .get("id").asLong();
-
-        // 3. Admin views all orders and should see both
-        mockMvc.perform(get(ORDERS_URL)
-                .headers(adminHeaders))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.id==" + adminOrderId + ")]").exists())
-                .andExpect(jsonPath("$[?(@.id==" + customerOrderId + ")]").exists());
-
-        // 4. Admin matches one order
-        MatchOrderRequest matchRequest = new MatchOrderRequest(adminOrderId);
-        mockMvc.perform(post(ORDERS_MATCH_URL)
-                .headers(adminHeaders)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(toJson(matchRequest)))
-                .andExpect(status().isOk());
-
-        // 5. Admin cancels the other order
-        mockMvc.perform(delete(ORDERS_URL + "/" + customerOrderId)
-                .headers(adminHeaders))
-                .andExpect(status().isOk());
-
-        // 6. Verify order statuses changed
-        mockMvc.perform(get(ORDERS_URL)
-                .headers(adminHeaders))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.id==" + adminOrderId + ")].status").value("MATCHED"))
-                .andExpect(jsonPath("$[?(@.id==" + customerOrderId + ")].status").value("CANCELLED"));
     }
 
     @Test

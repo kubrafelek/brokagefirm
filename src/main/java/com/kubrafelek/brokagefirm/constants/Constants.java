@@ -48,7 +48,7 @@ public final class Constants {
     public static final class OperationDescriptions {
         public static final String API_INFO_DESC = "Get API information, available endpoints, test accounts, and usage examples";
         public static final String CANCEL_ORDER_DESC = "Cancel a pending order. Customers can only cancel their own orders, while admins can cancel any order.";
-        public static final String CREATE_ORDER_DESC = "Create a new trading order. Admins can create orders for any customer, while regular customers can only create orders for themselves.";
+        public static final String CREATE_ORDER_DESC = "Create a new trading order for any customer. Only admin users can create orders.";
         public static final String HEALTH_CHECK_DESC = "Check the health status of the API";
         public static final String LIST_ASSETS_DESC = "Retrieve assets for a customer. Admins can specify any customer ID, while regular customers can only see their own assets.";
         public static final String LIST_ORDERS_DESC = "Retrieve orders with optional filtering by customer ID and date range. Admins can view all orders, while regular customers can only see their own.";
@@ -95,6 +95,7 @@ public final class Constants {
         public static final String LOGIN_FAILED = "Login failed: ";
         public static final String ONLY_ADMIN_USERS_CAN_MATCH_ORDERS = "Only admin users can match orders";
         public static final String ONLY_ADMIN_USERS_CAN_VIEW_PENDING_ORDERS = "Only admin users can view all pending orders";
+        public static final String ONLY_ADMIN_USERS_CAN_CREATE_ORDERS = "Only admin users can create orders for customers";
         public static final String ONLY_PENDING_ORDERS_CAN_BE_CANCELLED = "Only pending orders can be cancelled";
         public static final String ONLY_PENDING_ORDERS_CAN_BE_MATCHED = "Only pending orders can be matched";
         public static final String ORDER_NOT_FOUND = "Order not found";

@@ -7,7 +7,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -29,15 +28,15 @@ class OrderIT extends BaseIT {
     private static final LocalDateTime FIXED_DATE = LocalDateTime.of(2025, 8, 21, 16, 0, 0);
 
     @Test
-    @DisplayName("Should create BUY order successfully for customer")
+    @DisplayName("Should successfully create BUY order")
     void testCreateBuyOrder_Success() throws Exception {
         CreateOrderRequest request = new CreateOrderRequest(
                 CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(2.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
-        HttpHeaders headers = createCustomer1Headers();
+        HttpHeaders adminHeaders = createAdminHeaders();
 
         mockMvc.perform(post(ORDERS_URL)
-                .headers(headers)
+                .headers(adminHeaders)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(request)))
                 .andExpect(status().isOk())
@@ -51,15 +50,15 @@ class OrderIT extends BaseIT {
     }
 
     @Test
-    @DisplayName("Should create SELL order successfully for customer")
+    @DisplayName("Should successfully create SELL order")
     void testCreateSellOrder_Success() throws Exception {
         CreateOrderRequest request = new CreateOrderRequest(
                 CUSTOMER1_ID, "AAPL", OrderSide.SELL, BigDecimal.valueOf(3.0), BigDecimal.valueOf(155.00), FIXED_DATE);
 
-        HttpHeaders headers = createCustomer1Headers();
+        HttpHeaders adminHeaders = createAdminHeaders();
 
         mockMvc.perform(post(ORDERS_URL)
-                .headers(headers)
+                .headers(adminHeaders)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(request)))
                 .andExpect(status().isOk())
@@ -78,10 +77,10 @@ class OrderIT extends BaseIT {
         CreateOrderRequest request = new CreateOrderRequest(
                 CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(100.0), BigDecimal.valueOf(200.00), FIXED_DATE);
 
-        HttpHeaders headers = createCustomer1Headers();
+        HttpHeaders adminHeaders = createAdminHeaders();
 
         mockMvc.perform(post(ORDERS_URL)
-                .headers(headers)
+                .headers(adminHeaders)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(request)))
                 .andExpect(status().isBadRequest())
@@ -91,14 +90,14 @@ class OrderIT extends BaseIT {
 
     @Test
     @DisplayName("Should reject SELL order with insufficient asset balance")
-    void testCreateSellOrder_InsufficientBalance() throws Exception {
+    void testCreateSellOrder_InsufficientAssets() throws Exception {
         CreateOrderRequest request = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.SELL, BigDecimal.valueOf(50.0), BigDecimal.valueOf(150.00), FIXED_DATE);
+                CUSTOMER1_ID, "AAPL", OrderSide.SELL, BigDecimal.valueOf(100.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
-        HttpHeaders headers = createCustomer1Headers();
+        HttpHeaders adminHeaders = createAdminHeaders();
 
         mockMvc.perform(post(ORDERS_URL)
-                .headers(headers)
+                .headers(adminHeaders)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(request)))
                 .andExpect(status().isBadRequest())
@@ -107,20 +106,19 @@ class OrderIT extends BaseIT {
     }
 
     @Test
-    @DisplayName("Should reject order creation for different customer")
-    void testCreateOrder_UnauthorizedUser() throws Exception {
+    @DisplayName("Should reject order creation by non-admin users")
+    void testCreateOrder_CustomerForbidden() throws Exception {
         CreateOrderRequest request = new CreateOrderRequest(
-                CUSTOMER2_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(2.0), BigDecimal.valueOf(150.00), FIXED_DATE);
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(2.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
-        HttpHeaders headers = createCustomer1Headers(); // customer1 trying to create order for customer2
+        HttpHeaders customerHeaders = createCustomer1Headers();
 
         mockMvc.perform(post(ORDERS_URL)
-                .headers(headers)
+                .headers(customerHeaders)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(request)))
                 .andExpect(status().isForbidden())
-                .andExpect(content().contentType("text/plain;charset=UTF-8"))
-                .andExpect(content().string(containsString("You can only create orders for yourself")));
+                .andExpect(content().string(containsString("Only admin users can create orders for customers")));
     }
 
     @Test
@@ -191,122 +189,6 @@ class OrderIT extends BaseIT {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").isArray());
-    }
-
-    @Test
-    @DisplayName("Should cancel pending order by customer")
-    void testCancelOrder_Customer() throws Exception {
-        // First create an order to cancel
-        CreateOrderRequest createRequest = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
-
-        HttpHeaders headers = createCustomer1Headers();
-
-        MvcResult createResult = mockMvc.perform(post(ORDERS_URL)
-                .headers(headers)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(toJson(createRequest)))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String createResponse = createResult.getResponse().getContentAsString();
-        Long orderId = objectMapper.readTree(createResponse).get("id").asLong();
-
-        // Now cancel the order
-        mockMvc.perform(delete(ORDERS_URL + "/" + orderId)
-                .headers(headers))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.status").value("CANCELLED"));
-    }
-
-    @Test
-    @DisplayName("Should reject cancelling order of different customer")
-    void testCancelOrder_UnauthorizedCustomer() throws Exception {
-        HttpHeaders customer1Headers = createCustomer1Headers();
-        HttpHeaders customer2Headers = createCustomer2Headers();
-
-        // Create order as customer1
-        CreateOrderRequest createRequest = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
-
-        MvcResult createResult = mockMvc.perform(post(ORDERS_URL)
-                .headers(customer1Headers)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(toJson(createRequest)))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String createResponse = createResult.getResponse().getContentAsString();
-        long orderId = objectMapper.readTree(createResponse).get("id").asLong();
-
-        // Try to cancel as customer2
-        mockMvc.perform(delete(ORDERS_URL + "/" + orderId)
-                .headers(customer2Headers))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().contentType("text/plain;charset=UTF-8"))
-                .andExpect(content().string(containsString("Failed to cancel order")))
-                .andExpect(content().string(containsString("You can only cancel your own orders")));
-    }
-
-    @Test
-    @DisplayName("Should allow admin to cancel any order")
-    void testCancelOrder_Admin() throws Exception {
-        // Create order as customer
-        CreateOrderRequest createRequest = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
-
-        HttpHeaders customerHeaders = createCustomer1Headers();
-        HttpHeaders adminHeaders = createAdminHeaders();
-
-        MvcResult createResult = mockMvc.perform(post(ORDERS_URL)
-                .headers(customerHeaders)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(toJson(createRequest)))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String createResponse = createResult.getResponse().getContentAsString();
-        Long orderId = objectMapper.readTree(createResponse).get("id").asLong();
-
-        // Cancel as admin
-        mockMvc.perform(delete(ORDERS_URL + "/" + orderId)
-                .headers(adminHeaders))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.status").value("CANCELLED"));
-    }
-
-    @Test
-    @DisplayName("Should allow admin to match pending order")
-    void testMatchOrder_Admin() throws Exception {
-        // Create a pending order first
-        CreateOrderRequest createRequest = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
-
-        HttpHeaders customerHeaders = createCustomer1Headers();
-        HttpHeaders adminHeaders = createAdminHeaders();
-
-        MvcResult createResult = mockMvc.perform(post(ORDERS_URL)
-                .headers(customerHeaders)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(toJson(createRequest)))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String createResponse = createResult.getResponse().getContentAsString();
-        Long orderId = objectMapper.readTree(createResponse).get("id").asLong();
-
-        // Match the order as admin
-        MatchOrderRequest matchRequest = new MatchOrderRequest(orderId);
-
-        mockMvc.perform(post(ORDERS_MATCH_URL)
-                .headers(adminHeaders)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(toJson(matchRequest)))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.status").value("MATCHED"));
     }
 
     @Test

@@ -50,19 +50,19 @@ class EndToEndWorkflowIT extends BaseIT {
 
         // 2. Check customer's assets before trading
         HttpHeaders customerHeaders = createCustomer1Headers();
-        MvcResult assetsBeforeResult = mockMvc.perform(get(ASSETS_URL)
+        mockMvc.perform(get(ASSETS_URL)
                 .headers(customerHeaders))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.assetName=='TRY')].usableSize").value(hasItem(10000.00)))
-                .andExpect(jsonPath("$[?(@.assetName=='AAPL')].usableSize").value(hasItem(10.00)))
-                .andReturn();
+                .andExpect(jsonPath("$[?(@.assetName=='AAPL')].usableSize").value(hasItem(10.00)));
 
-        // 3. Customer creates a BUY order
+        // 3. Admin creates a BUY order for customer (only admin can create orders)
+        HttpHeaders adminHeaders = createAdminHeaders();
         CreateOrderRequest buyOrder = new CreateOrderRequest(
                 CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(2.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         MvcResult orderResult = mockMvc.perform(post(ORDERS_URL)
-                .headers(customerHeaders)
+                .headers(adminHeaders)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(buyOrder)))
                 .andExpect(status().isOk())
@@ -78,8 +78,7 @@ class EndToEndWorkflowIT extends BaseIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.assetName=='TRY')].usableSize").value(hasItem(9700.00))); // 10000 - (2 * 150)
 
-        // 5. Admin login and match the order
-        HttpHeaders adminHeaders = createAdminHeaders();
+        // 5. Admin matches the order
         MatchOrderRequest matchRequest = new MatchOrderRequest(orderId);
 
         mockMvc.perform(post(ORDERS_MATCH_URL)
@@ -117,12 +116,12 @@ class EndToEndWorkflowIT extends BaseIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.assetName=='AAPL')].usableSize").value(hasItem(10.00)));
 
-        // 2. Create SELL order
+        // 2. Admin creates SELL order for customer
         CreateOrderRequest sellOrder = new CreateOrderRequest(
                 CUSTOMER1_ID, "AAPL", OrderSide.SELL, BigDecimal.valueOf(3.0), BigDecimal.valueOf(155.00), FIXED_DATE);
 
         MvcResult orderResult = mockMvc.perform(post(ORDERS_URL)
-                .headers(customerHeaders)
+                .headers(adminHeaders)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(sellOrder)))
                 .andExpect(status().isOk())
@@ -160,25 +159,25 @@ class EndToEndWorkflowIT extends BaseIT {
     @DisplayName("Order cancellation workflow with asset release")
     void testOrderCancellationWorkflow() throws Exception {
         HttpHeaders customerHeaders = createCustomer1Headers();
+        HttpHeaders adminHeaders = createAdminHeaders();
 
         // 1. Check initial TRY balance
-        MvcResult initialAssetsResult = mockMvc.perform(get(ASSETS_URL)
+        mockMvc.perform(get(ASSETS_URL)
                 .headers(customerHeaders))
-                .andExpect(status().isOk())
-                .andReturn();
+                .andExpect(status().isOk());
 
-        // 2. Create BUY order that reserves TRY
+        // 2. Admin creates BUY order that reserves TRY
         CreateOrderRequest buyOrder = new CreateOrderRequest(
                 CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(4.0), BigDecimal.valueOf(100.00), FIXED_DATE);
 
         MvcResult orderResult = mockMvc.perform(post(ORDERS_URL)
-                .headers(customerHeaders)
+                .headers(adminHeaders)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(buyOrder)))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        Long orderId = objectMapper.readTree(orderResult.getResponse().getContentAsString())
+        long orderId = objectMapper.readTree(orderResult.getResponse().getContentAsString())
                 .get("id").asLong();
 
         // 3. Verify TRY is reserved
@@ -204,8 +203,6 @@ class EndToEndWorkflowIT extends BaseIT {
     @DisplayName("Admin comprehensive management workflow")
     void testAdminManagementWorkflow() throws Exception {
         HttpHeaders adminHeaders = createAdminHeaders();
-        HttpHeaders customer1Headers = createCustomer1Headers();
-        HttpHeaders customer2Headers = createCustomer2Headers();
 
         // 1. Admin login verification
         LoginRequest adminLogin = new LoginRequest(ADMIN_USERNAME, ADMIN_PASSWORD);
@@ -255,7 +252,7 @@ class EndToEndWorkflowIT extends BaseIT {
 
         Long order1Id = objectMapper.readTree(order1Result.getResponse().getContentAsString())
                 .get("id").asLong();
-        Long order2Id = objectMapper.readTree(order2Result.getResponse().getContentAsString())
+        long order2Id = objectMapper.readTree(order2Result.getResponse().getContentAsString())
                 .get("id").asLong();
 
         // 4. Admin views all pending orders
@@ -301,12 +298,12 @@ class EndToEndWorkflowIT extends BaseIT {
                 .headers(customer2Headers))
                 .andExpect(status().isOk());
 
-        // 2. Customer1 creates a buy order
+        // 2. Admin creates a buy order for customer1
         CreateOrderRequest customer1BuyOrder = new CreateOrderRequest(
                 CUSTOMER1_ID, "GOOGL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(2800.00), FIXED_DATE);
 
         MvcResult customer1OrderResult = mockMvc.perform(post(ORDERS_URL)
-                .headers(customer1Headers)
+                .headers(adminHeaders)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(customer1BuyOrder)))
                 .andExpect(status().isOk())
@@ -315,12 +312,12 @@ class EndToEndWorkflowIT extends BaseIT {
         Long customer1OrderId = objectMapper.readTree(customer1OrderResult.getResponse().getContentAsString())
                 .get("id").asLong();
 
-        // 3. Customer2 creates a sell order
+        // 3. Admin creates a sell order for customer2
         CreateOrderRequest customer2SellOrder = new CreateOrderRequest(
                 CUSTOMER2_ID, "MSFT", OrderSide.SELL, BigDecimal.valueOf(5.0), BigDecimal.valueOf(420.00), FIXED_DATE);
 
         MvcResult customer2OrderResult = mockMvc.perform(post(ORDERS_URL)
-                .headers(customer2Headers)
+                .headers(adminHeaders)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(customer2SellOrder)))
                 .andExpect(status().isOk())
@@ -371,23 +368,34 @@ class EndToEndWorkflowIT extends BaseIT {
         HttpHeaders customerHeaders = createCustomer1Headers();
         HttpHeaders adminHeaders = createAdminHeaders();
 
-        // 1. Customer attempts to create order with insufficient balance
+        // 1. Customer attempts to create order (should fail - only admin can create orders)
+        CreateOrderRequest customerOrder = new CreateOrderRequest(
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(2.0), BigDecimal.valueOf(150.00), FIXED_DATE);
+
+        mockMvc.perform(post(ORDERS_URL)
+                .headers(customerHeaders)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(customerOrder)))
+                .andExpect(status().isForbidden())
+                .andExpect(content().string(containsString("Only admin users can create orders")));
+
+        // 2. Admin attempts to create order with insufficient balance
         CreateOrderRequest insufficientBalanceOrder = new CreateOrderRequest(
                 CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(100.0), BigDecimal.valueOf(200.00), FIXED_DATE);
 
         mockMvc.perform(post(ORDERS_URL)
-                .headers(customerHeaders)
+                .headers(adminHeaders)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(insufficientBalanceOrder)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("Insufficient usable balance")));
 
-        // 2. Customer creates valid order
+        // 3. Admin creates valid order
         CreateOrderRequest validOrder = new CreateOrderRequest(
                 CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(2.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         MvcResult orderResult = mockMvc.perform(post(ORDERS_URL)
-                .headers(customerHeaders)
+                .headers(adminHeaders)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(validOrder)))
                 .andExpect(status().isOk())
@@ -396,7 +404,7 @@ class EndToEndWorkflowIT extends BaseIT {
         Long orderId = objectMapper.readTree(orderResult.getResponse().getContentAsString())
                 .get("id").asLong();
 
-        // 3. Admin attempts to match non-existent order (should fail)
+        // 4. Admin attempts to match non-existent order (should fail)
         MatchOrderRequest invalidMatchRequest = new MatchOrderRequest(99999L);
         mockMvc.perform(post(ORDERS_MATCH_URL)
                 .headers(adminHeaders)
@@ -404,7 +412,7 @@ class EndToEndWorkflowIT extends BaseIT {
                 .content(toJson(invalidMatchRequest)))
                 .andExpect(status().isBadRequest());
 
-        // 4. Admin successfully matches the real order
+        // 5. Admin successfully matches the real order
         MatchOrderRequest validMatchRequest = new MatchOrderRequest(orderId);
         mockMvc.perform(post(ORDERS_MATCH_URL)
                 .headers(adminHeaders)
@@ -412,13 +420,13 @@ class EndToEndWorkflowIT extends BaseIT {
                 .content(toJson(validMatchRequest)))
                 .andExpect(status().isOk());
 
-        // 5. Customer attempts to cancel already matched order (should fail)
+        // 6. Customer attempts to cancel already matched order (should fail)
         mockMvc.perform(delete(ORDERS_URL + "/" + orderId)
                 .headers(customerHeaders))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("cancelled")));
 
-        // 6. Verify final state is consistent
+        // 7. Verify final state is consistent
         mockMvc.perform(get(ORDERS_URL)
                 .headers(customerHeaders))
                 .andExpect(status().isOk())
