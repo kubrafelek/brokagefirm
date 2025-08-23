@@ -1,9 +1,11 @@
 package com.kubrafelek.brokagefirm.service;
 
 import com.kubrafelek.brokagefirm.entity.Order;
+import com.kubrafelek.brokagefirm.entity.Asset;
 import com.kubrafelek.brokagefirm.enums.OrderSide;
 import com.kubrafelek.brokagefirm.enums.OrderStatus;
 import com.kubrafelek.brokagefirm.repository.OrderRepository;
+import com.kubrafelek.brokagefirm.repository.AssetRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
@@ -31,6 +34,9 @@ class OrderServiceTest {
 
     @Mock
     private AssetService assetService;
+
+    @Mock
+    private AssetRepository assetRepository;
 
     @InjectMocks
     private OrderService orderService;
@@ -131,13 +137,25 @@ class OrderServiceTest {
 
     @Test
     void testMatchBuyOrder_Success() {
+        // Mock existing TRY asset for the user
+        Asset tryAsset = new Asset(1L, "TRY", new BigDecimal("2000.00"), new BigDecimal("500.00"));
+        when(assetRepository.findByUserIdAndAssetName(1L, "TRY"))
+            .thenReturn(Optional.of(tryAsset));
+
+        // Mock that user doesn't have AAPL asset yet (new asset will be created)
+        when(assetRepository.findByUserIdAndAssetName(1L, "AAPL"))
+            .thenReturn(Optional.empty());
+
         when(orderRepository.findById(1L)).thenReturn(Optional.of(testOrder));
         when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+        when(assetRepository.save(any(Asset.class))).thenReturn(new Asset());
 
         Order result = orderService.matchOrder(1L);
 
         assertEquals(OrderStatus.MATCHED, result.getStatus());
-        verify(assetService).transferAsset(1L, 1L,"AAPL", new BigDecimal("10.00"));
+        verify(assetRepository).findByUserIdAndAssetName(1L, "TRY");
+        verify(assetRepository).findByUserIdAndAssetName(1L, "AAPL");
+        verify(assetRepository, times(2)).save(any(Asset.class)); // Save TRY asset update and new AAPL asset
         verify(orderRepository).save(testOrder);
     }
 

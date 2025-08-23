@@ -55,12 +55,12 @@ public class AuthController {
                 return ResponseEntity.ok(response);
             } else {
                 logger.warn("Authentication failed for user: {}", request.getUsername());
-                LoginResponse response = new LoginResponse(Constants.ErrorMessages.INVALID_CREDENTIALS, null, null);
+                LoginResponse response = new LoginResponse(Constants.ErrorMessages.INVALID_CREDENTIALS, 0L, false);
                 return ResponseEntity.status(401).body(response);
             }
         } catch (Exception e) {
             logger.error("Exception during login for user: {}, error: {}", request.getUsername(), e.getMessage(), e);
-            LoginResponse response = new LoginResponse(Constants.ErrorMessages.LOGIN_FAILED + e.getMessage(), null, null);
+            LoginResponse response = new LoginResponse(Constants.ErrorMessages.LOGIN_FAILED + e.getMessage(), 0L, false);
             return ResponseEntity.status(500).body(response);
         }
     }

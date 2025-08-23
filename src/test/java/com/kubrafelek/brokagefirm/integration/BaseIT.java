@@ -11,8 +11,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Base64;
-
 /**
  * Base class for integration tests providing common configuration and utilities
  */
@@ -21,7 +19,7 @@ import java.util.Base64;
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @Transactional
-public abstract class BaseIntegrationTest {
+public abstract class BaseIT {
 
     @Autowired
     protected MockMvc mockMvc;

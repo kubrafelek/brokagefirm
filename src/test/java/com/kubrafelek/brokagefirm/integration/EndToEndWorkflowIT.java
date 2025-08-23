@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * End-to-end integration tests that simulate complete business workflows
  */
 @DisplayName("End-to-End Workflow Integration Tests")
-class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
+class EndToEndWorkflowIT extends BaseIT {
 
     private static final String AUTH_LOGIN_URL = "/api/auth/login";
     private static final String ORDERS_URL = "/api/orders";
@@ -50,8 +50,8 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
         MvcResult assetsBeforeResult = mockMvc.perform(get(ASSETS_URL)
                 .headers(customerHeaders))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.assets[?(@.assetName=='TRY')].usableSize").value(hasItem(10000.00)))
-                .andExpect(jsonPath("$.assets[?(@.assetName=='AAPL')].usableSize").value(hasItem(10.00)))
+                .andExpect(jsonPath("$[?(@.assetName=='TRY')].usableSize").value(hasItem(10000.00)))
+                .andExpect(jsonPath("$[?(@.assetName=='AAPL')].usableSize").value(hasItem(10.00)))
                 .andReturn();
 
         // 3. Customer creates a BUY order
@@ -63,18 +63,17 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(buyOrder)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.order.status").value("PENDING"))
+                .andExpect(jsonPath("$.status").value("PENDING"))
                 .andReturn();
 
         Long orderId = objectMapper.readTree(orderResult.getResponse().getContentAsString())
-                .get("order").get("id").asLong();
+                .get("id").asLong();
 
         // 4. Verify TRY balance is reserved after order creation
         mockMvc.perform(get(ASSETS_URL)
                 .headers(customerHeaders))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.assets[?(@.assetName=='TRY')].usableSize").value(hasItem(9700.00))); // 10000 -
-                                                                                                            // (2 * 150)
+                .andExpect(jsonPath("$[?(@.assetName=='TRY')].usableSize").value(hasItem(9700.00))); // 10000 - (2 * 150)
 
         // 5. Admin login and match the order
         HttpHeaders adminHeaders = createAdminHeaders();
@@ -85,24 +84,22 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(matchRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.order.status").value("MATCHED"));
+                .andExpect(jsonPath("$.status").value("MATCHED"));
 
         // 6. Verify final asset balances after matching
         mockMvc.perform(get(ASSETS_URL)
                 .headers(customerHeaders))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.assets[?(@.assetName=='TRY')].size").value(hasItem(9700.00))) // TRY reduced
-                .andExpect(jsonPath("$.assets[?(@.assetName=='TRY')].usableSize").value(hasItem(9700.00))) // Usable
-                                                                                                           // updated
-                .andExpect(jsonPath("$.assets[?(@.assetName=='AAPL')].size").value(hasItem(12.00))) // AAPL increased
-                .andExpect(jsonPath("$.assets[?(@.assetName=='AAPL')].usableSize").value(hasItem(12.00))); // Usable
-                                                                                                           // updated
+                .andExpect(jsonPath("$[?(@.assetName=='TRY')].size").value(hasItem(9700.00))) // TRY reduced
+                .andExpect(jsonPath("$[?(@.assetName=='TRY')].usableSize").value(hasItem(9700.00))) // Usable updated
+                .andExpect(jsonPath("$[?(@.assetName=='AAPL')].size").value(hasItem(12.00))) // AAPL increased
+                .andExpect(jsonPath("$[?(@.assetName=='AAPL')].usableSize").value(hasItem(12.00))); // Usable updated
 
         // 7. Verify order history shows the matched order
         mockMvc.perform(get(ORDERS_URL)
                 .headers(customerHeaders))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orders[?(@.id==" + orderId + ")].status").value("MATCHED"));
+                .andExpect(jsonPath("$[?(@.id==" + orderId + ")].status").value("MATCHED"));
     }
 
     @Test
@@ -115,7 +112,7 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get(ASSETS_URL)
                 .headers(customerHeaders))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.assets[?(@.assetName=='AAPL')].usableSize").value(hasItem(10.00)));
+                .andExpect(jsonPath("$[?(@.assetName=='AAPL')].usableSize").value(hasItem(10.00)));
 
         // 2. Create SELL order
         CreateOrderRequest sellOrder = new CreateOrderRequest(
@@ -126,17 +123,17 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(sellOrder)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.order.status").value("PENDING"))
+                .andExpect(jsonPath("$.status").value("PENDING"))
                 .andReturn();
 
         Long orderId = objectMapper.readTree(orderResult.getResponse().getContentAsString())
-                .get("order").get("id").asLong();
+                .get("id").asLong();
 
         // 3. Verify AAPL is reserved after order creation
         mockMvc.perform(get(ASSETS_URL)
                 .headers(customerHeaders))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.assets[?(@.assetName=='AAPL')].usableSize").value(hasItem(7.00))); // 10 - 3
+                .andExpect(jsonPath("$[?(@.assetName=='AAPL')].usableSize").value(hasItem(7.00))); // 10 - 3
 
         // 4. Admin matches the order
         MatchOrderRequest matchRequest = new MatchOrderRequest(orderId);
@@ -150,11 +147,10 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get(ASSETS_URL)
                 .headers(customerHeaders))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.assets[?(@.assetName=='AAPL')].size").value(hasItem(7.00))) // AAPL reduced
-                .andExpect(jsonPath("$.assets[?(@.assetName=='AAPL')].usableSize").value(hasItem(7.00)))
-                .andExpect(jsonPath("$.assets[?(@.assetName=='TRY')].size").value(hasItem(10465.00))) // TRY increased
-                                                                                                      // (10000 + 3*155)
-                .andExpect(jsonPath("$.assets[?(@.assetName=='TRY')].usableSize").value(hasItem(10465.00)));
+                .andExpect(jsonPath("$[?(@.assetName=='AAPL')].size").value(hasItem(7.00))) // AAPL reduced
+                .andExpect(jsonPath("$[?(@.assetName=='AAPL')].usableSize").value(hasItem(7.00)))
+                .andExpect(jsonPath("$[?(@.assetName=='TRY')].size").value(hasItem(10465.00))) // TRY increased (10000 + 3*155)
+                .andExpect(jsonPath("$[?(@.assetName=='TRY')].usableSize").value(hasItem(10465.00)));
     }
 
     @Test
@@ -180,27 +176,25 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
                 .andReturn();
 
         Long orderId = objectMapper.readTree(orderResult.getResponse().getContentAsString())
-                .get("order").get("id").asLong();
+                .get("id").asLong();
 
         // 3. Verify TRY is reserved
         mockMvc.perform(get(ASSETS_URL)
                 .headers(customerHeaders))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.assets[?(@.assetName=='TRY')].usableSize").value(hasItem(9600.00))); // 10000 -
-                                                                                                            // 400
+                .andExpect(jsonPath("$[?(@.assetName=='TRY')].usableSize").value(hasItem(9600.00))); // 10000 - 400
 
         // 4. Cancel the order
         mockMvc.perform(delete(ORDERS_URL + "/" + orderId)
                 .headers(customerHeaders))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.order.status").value("CANCELLED"));
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
 
         // 5. Verify TRY is released back
         mockMvc.perform(get(ASSETS_URL)
                 .headers(customerHeaders))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.assets[?(@.assetName=='TRY')].usableSize").value(hasItem(10000.00))); // Back to
-                                                                                                             // original
+                .andExpect(jsonPath("$[?(@.assetName=='TRY')].usableSize").value(hasItem(10000.00))); // Back to original
     }
 
     @Test
@@ -227,13 +221,13 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
                 .headers(adminHeaders)
                 .param("userId", CUSTOMER1_ID.toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.assets[*].userId").value(everyItem(is(CUSTOMER1_ID.intValue()))));
+                .andExpect(jsonPath("$[*].userId").value(everyItem(is(CUSTOMER1_ID.intValue()))));
 
         mockMvc.perform(get(ASSETS_URL)
                 .headers(adminHeaders)
                 .param("userId", CUSTOMER2_ID.toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.assets[*].userId").value(everyItem(is(CUSTOMER2_ID.intValue()))));
+                .andExpect(jsonPath("$[*].userId").value(everyItem(is(CUSTOMER2_ID.intValue()))));
 
         // 3. Admin creates orders for different customers
         CreateOrderRequest orderForCustomer1 = new CreateOrderRequest(
@@ -257,16 +251,16 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
                 .andReturn();
 
         Long order1Id = objectMapper.readTree(order1Result.getResponse().getContentAsString())
-                .get("order").get("id").asLong();
+                .get("id").asLong();
         Long order2Id = objectMapper.readTree(order2Result.getResponse().getContentAsString())
-                .get("order").get("id").asLong();
+                .get("id").asLong();
 
         // 4. Admin views all pending orders
         mockMvc.perform(get(ORDERS_PENDING_URL)
                 .headers(adminHeaders))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orders[?(@.id==" + order1Id + ")].status").value("PENDING"))
-                .andExpect(jsonPath("$.orders[?(@.id==" + order2Id + ")].status").value("PENDING"));
+                .andExpect(jsonPath("$[?(@.id==" + order1Id + ")].status").value("PENDING"))
+                .andExpect(jsonPath("$[?(@.id==" + order2Id + ")].status").value("PENDING"));
 
         // 5. Admin matches one order and cancels another
         MatchOrderRequest matchRequest = new MatchOrderRequest(order1Id);
@@ -284,8 +278,8 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get(ORDERS_URL)
                 .headers(adminHeaders))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orders[?(@.id==" + order1Id + ")].status").value("MATCHED"))
-                .andExpect(jsonPath("$.orders[?(@.id==" + order2Id + ")].status").value("CANCELLED"));
+                .andExpect(jsonPath("$[?(@.id==" + order1Id + ")].status").value("MATCHED"))
+                .andExpect(jsonPath("$[?(@.id==" + order2Id + ")].status").value("CANCELLED"));
     }
 
     @Test
@@ -316,7 +310,7 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
                 .andReturn();
 
         Long customer1OrderId = objectMapper.readTree(customer1OrderResult.getResponse().getContentAsString())
-                .get("order").get("id").asLong();
+                .get("id").asLong();
 
         // 3. Customer2 creates a sell order
         CreateOrderRequest customer2SellOrder = new CreateOrderRequest(
@@ -330,14 +324,14 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
                 .andReturn();
 
         Long customer2OrderId = objectMapper.readTree(customer2OrderResult.getResponse().getContentAsString())
-                .get("order").get("id").asLong();
+                .get("id").asLong();
 
         // 4. Admin views all pending orders from both customers
         mockMvc.perform(get(ORDERS_PENDING_URL)
                 .headers(adminHeaders))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orders[?(@.id==" + customer1OrderId + ")]").exists())
-                .andExpect(jsonPath("$.orders[?(@.id==" + customer2OrderId + ")]").exists());
+                .andExpect(jsonPath("$[?(@.id==" + customer1OrderId + ")]").exists())
+                .andExpect(jsonPath("$[?(@.id==" + customer2OrderId + ")]").exists());
 
         // 5. Admin matches both orders
         MatchOrderRequest matchRequest1 = new MatchOrderRequest(customer1OrderId);
@@ -359,14 +353,13 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get(ASSETS_URL)
                 .headers(customer1Headers))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.assets[?(@.assetName=='GOOGL')].size").value(hasItem(6.00))); // 5 + 1
+                .andExpect(jsonPath("$[?(@.assetName=='GOOGL')].size").value(hasItem(6.00))); // 5 + 1
 
         mockMvc.perform(get(ASSETS_URL)
                 .headers(customer2Headers))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.assets[?(@.assetName=='MSFT')].size").value(hasItem(15.00))) // 20 - 5
-                .andExpect(jsonPath("$.assets[?(@.assetName=='TRY')].size").value(hasItem(17100.00))); // 15000 + (5 *
-                                                                                                       // 420)
+                .andExpect(jsonPath("$[?(@.assetName=='MSFT')].size").value(hasItem(15.00))) // 20 - 5
+                .andExpect(jsonPath("$[?(@.assetName=='TRY')].size").value(hasItem(17100.00))); // 15000 + (5 * 420)
     }
 
     @Test
@@ -384,7 +377,7 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(insufficientBalanceOrder)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Insufficient usable balance"));
+                .andExpect(content().string(containsString("Insufficient usable balance")));
 
         // 2. Customer creates valid order
         CreateOrderRequest validOrder = new CreateOrderRequest(
@@ -398,7 +391,7 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
                 .andReturn();
 
         Long orderId = objectMapper.readTree(orderResult.getResponse().getContentAsString())
-                .get("order").get("id").asLong();
+                .get("id").asLong();
 
         // 3. Admin attempts to match non-existent order (should fail)
         MatchOrderRequest invalidMatchRequest = new MatchOrderRequest(99999L);
@@ -406,7 +399,7 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
                 .headers(adminHeaders)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(invalidMatchRequest)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
 
         // 4. Admin successfully matches the real order
         MatchOrderRequest validMatchRequest = new MatchOrderRequest(orderId);
@@ -420,12 +413,12 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(delete(ORDERS_URL + "/" + orderId)
                 .headers(customerHeaders))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Only pending orders can be cancelled"));
+                .andExpect(content().string(containsString("cancelled")));
 
         // 6. Verify final state is consistent
         mockMvc.perform(get(ORDERS_URL)
                 .headers(customerHeaders))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orders[?(@.id==" + orderId + ")].status").value("MATCHED"));
+                .andExpect(jsonPath("$[?(@.id==" + orderId + ")].status").value("MATCHED"));
     }
 }

@@ -1,6 +1,8 @@
 package com.kubrafelek.brokagefirm.service;
 
 import com.kubrafelek.brokagefirm.entity.Order;
+import com.kubrafelek.brokagefirm.entity.Asset;
+import com.kubrafelek.brokagefirm.repository.AssetRepository;
 import com.kubrafelek.brokagefirm.enums.OrderSide;
 import com.kubrafelek.brokagefirm.enums.OrderStatus;
 import com.kubrafelek.brokagefirm.exception.InsufficientBalanceException;
@@ -27,23 +29,23 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final AssetService assetService;
+    private final AssetRepository assetRepository;
 
-    public OrderService(OrderRepository orderRepository, AssetService assetService) {
+    public OrderService(OrderRepository orderRepository, AssetService assetService, AssetRepository assetRepository) {
         this.orderRepository = orderRepository;
         this.assetService = assetService;
+        this.assetRepository = assetRepository;
     }
 
     public Order createOrder(Long userId, String assetName, OrderSide side, BigDecimal size, BigDecimal price) {
         BigDecimal totalAmount = size.multiply(price);
 
         if (side == OrderSide.BUY) {
-            // For BUY orders: (order.size * order.price) <= customer's TRY asset.usableSize
             if (!assetService.hasEnoughUsableBalance(userId, TRY_ASSET, totalAmount)) {
                 throw new InsufficientBalanceException(Constants.ErrorMessages.INSUFFICIENT_USABLE_BALANCE);
             }
             assetService.reserveAsset(userId, TRY_ASSET, totalAmount);
         } else {
-            // For SELL orders: order.size <= customer's [assetName] asset.usableSize
             if (!assetService.hasEnoughUsableBalance(userId, assetName, size)) {
                 throw new InsufficientBalanceException(Constants.ErrorMessages.INSUFFICIENT_USABLE_BALANCE);
             }
@@ -117,9 +119,41 @@ public class OrderService {
         BigDecimal totalAmount = order.getSize().multiply(order.getPrice());
 
         if (order.getOrderSide() == OrderSide.BUY) {
-            assetService.transferAsset(order.getUserId(), order.getUserId(), order.getAssetName(), order.getSize());
+            Optional<Asset> tryAssetOpt = assetRepository.findByUserIdAndAssetName(order.getUserId(), TRY_ASSET);
+            if (tryAssetOpt.isPresent()) {
+                Asset tryAsset = tryAssetOpt.get();
+                tryAsset.setSize(tryAsset.getSize().subtract(totalAmount));
+                assetRepository.save(tryAsset);
+            }
+
+            Optional<Asset> targetAssetOpt = assetRepository.findByUserIdAndAssetName(order.getUserId(), order.getAssetName());
+            if (targetAssetOpt.isPresent()) {
+                Asset targetAsset = targetAssetOpt.get();
+                targetAsset.setSize(targetAsset.getSize().add(order.getSize()));
+                targetAsset.setUsableSize(targetAsset.getUsableSize().add(order.getSize()));
+                assetRepository.save(targetAsset);
+            } else {
+                Asset newAsset = new Asset(order.getUserId(), order.getAssetName(), order.getSize(), order.getSize());
+                assetRepository.save(newAsset);
+            }
         } else {
-            assetService.transferAsset(order.getUserId(), order.getUserId(), TRY_ASSET, totalAmount);
+            Optional<Asset> assetOpt = assetRepository.findByUserIdAndAssetName(order.getUserId(), order.getAssetName());
+            if (assetOpt.isPresent()) {
+                Asset asset = assetOpt.get();
+                asset.setSize(asset.getSize().subtract(order.getSize()));
+                assetRepository.save(asset);
+            }
+
+            Optional<Asset> tryAssetOpt = assetRepository.findByUserIdAndAssetName(order.getUserId(), TRY_ASSET);
+            if (tryAssetOpt.isPresent()) {
+                Asset tryAsset = tryAssetOpt.get();
+                tryAsset.setSize(tryAsset.getSize().add(totalAmount));
+                tryAsset.setUsableSize(tryAsset.getUsableSize().add(totalAmount));
+                assetRepository.save(tryAsset);
+            } else {
+                Asset newTryAsset = new Asset(order.getUserId(), TRY_ASSET, totalAmount, totalAmount);
+                assetRepository.save(newTryAsset);
+            }
         }
 
         order.setStatus(OrderStatus.MATCHED);

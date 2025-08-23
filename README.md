@@ -94,6 +94,55 @@ A comprehensive Spring Boot application for managing stock orders in a brokerage
     - For a SELL order: Subtract order.size from the usableSize of the customer's [assetName] asset. The total size of the [assetName] asset remains unchanged at this stage.
 ###### Note: This operation MUST be executed within the same database transaction as the order creation to ensure data consistency.
 
+### 2. Order Cancellation Rules (DELETE /api/orders/{orderId})
+#### Rule 2.1: Order Existence and Ownership
+* Description: The order to be canceled must exist and the authenticated user must have the right to cancel it.
+* Conditions:
+  - An order with the given orderId must exist.
+  - The authenticated user must be an ADMIN OR the customerId of the order must match the authenticated user's ID.
+* Action: If not met, return a 404 Not Found (for existence) or 403 Forbidden (for ownership) error.
+
+#### Rule 2.2: Status Validation for Cancellation
+* Description: Only orders in the PENDING state can be canceled.
+* Conditions: The order's status must be PENDING.
+* Action: If the order is already MATCHED or CANCELED, reject the request with a 400 Bad Request error and a message like "Cannot cancel a order with status: MATCHED".
+
+#### Rule 2.3: Balance Restoration (Non-Negotiable)
+* Description: The funds or shares reserved by the order must be released back to the usable balance.
+* Conditions: Upon successful validation of Rules 2.1 and 2.2.
+* Action:
+  - For a canceled BUY order: Add (order.size * order.price) back to the usableSize of the customer's TRY asset.
+  - For a canceled SELL order: Add order.size back to the usableSize of the customer's [assetName] asset.
+###### Note: This operation MUST be executed in the same transaction as the order status update. 
+
+#### Rule 2.4: Final Status Update
+* Description: The order's status must be permanently updated to reflect the cancellation.
+* Conditions: After Rule 2.3 is executed.
+* Action: Set the order's status to CANCELED. The order's other properties (size, price, etc.) must remain immutable for auditing purposes.
+
+### 3. Order Matching Rules (POST /api/admin/match-orders)
+#### Rule 3.1: Authorization
+* Description: Only users with the ADMIN role can trigger order matching.
+* Conditions: The authenticated user's role must be ADMIN.
+* Action: If not met, return a 403 Forbidden error.
+
+#### Rule 3.2: Final Settlement of Assets (Non-Negotiable)
+* Description: Matching an order triggers the final settlement between the customer and the exchange, updating the total holdings.
+* Conditions: For each PENDING order being processed.
+* Action:
+  - For a BUY order (Customer receives stock, pays cash):
+    - Target Asset (e.g., AAPL): size = size + order.size | usableSize = usableSize + order.size
+    - TRY Asset (Cash): size = size - (order.size * order.price) | usableSize remains unchanged (it was already reduced during creation).
+  - For a SELL order (Customer gives stock, receives cash):
+    - Target Asset (e.g., AAPL): size = size - order.size | usableSize remains unchanged (it was already reduced during creation).
+    - TRY Asset (Cash): size = size + (order.size * order.price) | usableSize = usableSize + (order.size * order.price)
+
+###### Note: This entire process MUST be atomic (wrapped in a transaction) to ensure that all asset updates and order status updates succeed or fail together, preventing data corruption.
+
+#### Rule 3.3: Order Status Update upon Match
+* Description: Once an order has been settled, its status must be updated to prevent further changes.
+* Conditions: After the corresponding asset updates (Rule 3.2) are complete.
+* Action: Set the order's status to MATCHED.
 
 ## Technology Stack
 

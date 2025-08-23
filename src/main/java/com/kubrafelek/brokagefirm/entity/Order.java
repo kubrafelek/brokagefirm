@@ -61,6 +61,10 @@ public class Order {
         this.createDate = createDate;
     }
 
+    public Long getId() {
+        return id;
+    }
+
     public void setId(Long id) {
         this.id = id;
     }

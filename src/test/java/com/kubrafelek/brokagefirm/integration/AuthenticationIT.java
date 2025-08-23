@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Integration tests for authentication endpoints
  */
 @DisplayName("Authentication Integration Tests")
-class AuthIntegrationTest extends BaseIntegrationTest {
+class AuthenticationIT extends BaseIT {
 
     private static final String AUTH_LOGIN_URL = "/api/auth/login";
 
@@ -75,7 +75,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                 .content(toJson(loginRequest)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.error").value("Invalid credentials"));
+                .andExpect(jsonPath("$.message").value("Invalid credentials"));
     }
 
     @Test
@@ -88,7 +88,7 @@ class AuthIntegrationTest extends BaseIntegrationTest {
                 .content(toJson(loginRequest)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.error").value("Invalid credentials"));
+                .andExpect(jsonPath("$.message").value("Invalid credentials"));
     }
 
     @Test

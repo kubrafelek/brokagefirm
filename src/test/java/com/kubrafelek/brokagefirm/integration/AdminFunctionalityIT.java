@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Integration tests for admin-specific functionality
  */
 @DisplayName("Admin Functionality Integration Tests")
-class AdminFunctionalityIntegrationTest extends BaseIntegrationTest {
+class AdminFunctionalityIT extends BaseIT {
 
     private static final String ORDERS_URL = "/api/orders";
     private static final String ORDERS_MATCH_URL = "/api/orders/match";
@@ -40,8 +40,11 @@ class AdminFunctionalityIntegrationTest extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(orderForCustomer1)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Order created successfully"))
-                .andExpect(jsonPath("$.order.userId").value(CUSTOMER1_ID));
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.userId").value(CUSTOMER1_ID))
+                .andExpect(jsonPath("$.assetName").value("AAPL"))
+                .andExpect(jsonPath("$.orderSide").value("BUY"))
+                .andExpect(jsonPath("$.status").value("PENDING"));
 
         // Create order for customer2
         CreateOrderRequest orderForCustomer2 = new CreateOrderRequest(
@@ -52,8 +55,11 @@ class AdminFunctionalityIntegrationTest extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(orderForCustomer2)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Order created successfully"))
-                .andExpect(jsonPath("$.order.userId").value(CUSTOMER2_ID));
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.userId").value(CUSTOMER2_ID))
+                .andExpect(jsonPath("$.assetName").value("MSFT"))
+                .andExpect(jsonPath("$.orderSide").value("BUY"))
+                .andExpect(jsonPath("$.status").value("PENDING"));
     }
 
     @Test
@@ -65,10 +71,9 @@ class AdminFunctionalityIntegrationTest extends BaseIntegrationTest {
                 .headers(adminHeaders))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.message").value("Orders retrieved successfully"))
-                .andExpect(jsonPath("$.orders").isArray())
+                .andExpect(jsonPath("$").isArray())
                 // Should contain orders from multiple customers
-                .andExpect(jsonPath("$.orders[*].userId").value(hasItems(
+                .andExpect(jsonPath("$[*].userId").value(hasItems(
                         CUSTOMER1_ID.intValue(),
                         CUSTOMER2_ID.intValue(),
                         TEST_USER_ID.intValue())));
@@ -84,10 +89,9 @@ class AdminFunctionalityIntegrationTest extends BaseIntegrationTest {
                 .param("userId", CUSTOMER1_ID.toString()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.message").value("Orders retrieved successfully"))
-                .andExpect(jsonPath("$.orders").isArray())
+                .andExpect(jsonPath("$").isArray())
                 // Should only contain orders from customer1
-                .andExpect(jsonPath("$.orders[*].userId").value(everyItem(is(CUSTOMER1_ID.intValue()))));
+                .andExpect(jsonPath("$[*].userId").value(everyItem(is(CUSTOMER1_ID.intValue()))));
     }
 
     @Test
@@ -101,8 +105,8 @@ class AdminFunctionalityIntegrationTest extends BaseIntegrationTest {
                 .param("userId", CUSTOMER1_ID.toString()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.message").value("Assets retrieved successfully"))
-                .andExpect(jsonPath("$.assets[*].userId").value(everyItem(is(CUSTOMER1_ID.intValue()))));
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[*].userId").value(everyItem(is(CUSTOMER1_ID.intValue()))));
 
         // View customer2 assets
         mockMvc.perform(get(ASSETS_URL)
@@ -110,8 +114,8 @@ class AdminFunctionalityIntegrationTest extends BaseIntegrationTest {
                 .param("userId", CUSTOMER2_ID.toString()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.message").value("Assets retrieved successfully"))
-                .andExpect(jsonPath("$.assets[*].userId").value(everyItem(is(CUSTOMER2_ID.intValue()))));
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[*].userId").value(everyItem(is(CUSTOMER2_ID.intValue()))));
     }
 
     @Test
@@ -132,15 +136,15 @@ class AdminFunctionalityIntegrationTest extends BaseIntegrationTest {
                 .andReturn();
 
         String createResponse = createResult.getResponse().getContentAsString();
-        Long orderId = objectMapper.readTree(createResponse).get("order").get("id").asLong();
+        Long orderId = objectMapper.readTree(createResponse).get("id").asLong();
 
         // Admin cancels the order
         mockMvc.perform(delete(ORDERS_URL + "/" + orderId)
                 .headers(adminHeaders))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.message").value("Order cancelled successfully"))
-                .andExpect(jsonPath("$.order.status").value("CANCELLED"));
+                .andExpect(jsonPath("$.status").value("CANCELLED"))
+                .andExpect(jsonPath("$.id").value(orderId));
     }
 
     @Test
@@ -161,7 +165,7 @@ class AdminFunctionalityIntegrationTest extends BaseIntegrationTest {
                 .andReturn();
 
         String createResponse = createResult.getResponse().getContentAsString();
-        Long orderId = objectMapper.readTree(createResponse).get("order").get("id").asLong();
+        Long orderId = objectMapper.readTree(createResponse).get("id").asLong();
 
         // Admin matches the order
         MatchOrderRequest matchRequest = new MatchOrderRequest(orderId);
@@ -172,8 +176,8 @@ class AdminFunctionalityIntegrationTest extends BaseIntegrationTest {
                 .content(toJson(matchRequest)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.message").value("Order matched successfully"))
-                .andExpect(jsonPath("$.order.status").value("MATCHED"));
+                .andExpect(jsonPath("$.status").value("MATCHED"))
+                .andExpect(jsonPath("$.id").value(orderId));
     }
 
     @Test
@@ -185,9 +189,8 @@ class AdminFunctionalityIntegrationTest extends BaseIntegrationTest {
                 .headers(adminHeaders))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.message").value("Pending orders retrieved successfully"))
-                .andExpect(jsonPath("$.orders").isArray())
-                .andExpect(jsonPath("$.orders[*].status").value(everyItem(is("PENDING"))));
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[*].status").value(everyItem(is("PENDING"))));
     }
 
     @Test
@@ -208,7 +211,7 @@ class AdminFunctionalityIntegrationTest extends BaseIntegrationTest {
                 .andReturn();
 
         Long adminOrderId = objectMapper.readTree(adminCreateResult.getResponse().getContentAsString())
-                .get("order").get("id").asLong();
+                .get("id").asLong();
 
         // 2. Customer creates their own order
         CreateOrderRequest customerCreateOrder = new CreateOrderRequest(
@@ -222,14 +225,14 @@ class AdminFunctionalityIntegrationTest extends BaseIntegrationTest {
                 .andReturn();
 
         Long customerOrderId = objectMapper.readTree(customerCreateResult.getResponse().getContentAsString())
-                .get("order").get("id").asLong();
+                .get("id").asLong();
 
         // 3. Admin views all orders and should see both
         mockMvc.perform(get(ORDERS_URL)
                 .headers(adminHeaders))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orders[?(@.id==" + adminOrderId + ")]").exists())
-                .andExpect(jsonPath("$.orders[?(@.id==" + customerOrderId + ")]").exists());
+                .andExpect(jsonPath("$[?(@.id==" + adminOrderId + ")]").exists())
+                .andExpect(jsonPath("$[?(@.id==" + customerOrderId + ")]").exists());
 
         // 4. Admin matches one order
         MatchOrderRequest matchRequest = new MatchOrderRequest(adminOrderId);
@@ -248,8 +251,8 @@ class AdminFunctionalityIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get(ORDERS_URL)
                 .headers(adminHeaders))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orders[?(@.id==" + adminOrderId + ")].status").value("MATCHED"))
-                .andExpect(jsonPath("$.orders[?(@.id==" + customerOrderId + ")].status").value("CANCELLED"));
+                .andExpect(jsonPath("$[?(@.id==" + adminOrderId + ")].status").value("MATCHED"))
+                .andExpect(jsonPath("$[?(@.id==" + customerOrderId + ")].status").value("CANCELLED"));
     }
 
     @Test
@@ -263,8 +266,7 @@ class AdminFunctionalityIntegrationTest extends BaseIntegrationTest {
                 .param("endDate", "2025-08-24T23:59:59"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.message").value("Orders retrieved successfully"))
-                .andExpect(jsonPath("$.orders").isArray());
+                .andExpect(jsonPath("$").isArray());
     }
 
     @Test
@@ -281,9 +283,10 @@ class AdminFunctionalityIntegrationTest extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(sellOrder)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Order created successfully"))
-                .andExpect(jsonPath("$.order.orderSide").value("SELL"))
-                .andExpect(jsonPath("$.order.userId").value(CUSTOMER1_ID));
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.orderSide").value("SELL"))
+                .andExpect(jsonPath("$.userId").value(CUSTOMER1_ID))
+                .andExpect(jsonPath("$.status").value("PENDING"));
     }
 
     @Test
@@ -300,7 +303,7 @@ class AdminFunctionalityIntegrationTest extends BaseIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(invalidOrder)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Insufficient usable balance"));
+                .andExpect(content().string(containsString("Insufficient usable balance")));
     }
 
     @Test
@@ -331,6 +334,6 @@ class AdminFunctionalityIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get(ORDERS_URL)
                 .headers(adminHeaders))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orders", hasSize(greaterThanOrEqualTo(orders.length))));
+                .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(orders.length))));
     }
 }

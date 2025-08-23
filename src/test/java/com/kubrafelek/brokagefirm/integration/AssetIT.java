@@ -13,7 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Integration tests for asset management endpoints
  */
 @DisplayName("Asset Management Integration Tests")
-class AssetIntegrationTest extends BaseIntegrationTest {
+class AssetIT extends BaseIT {
 
         private static final String ASSETS_URL = "/api/assets";
 
