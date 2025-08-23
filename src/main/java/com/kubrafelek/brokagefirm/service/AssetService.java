@@ -87,45 +87,4 @@ public class AssetService {
             logger.warn("Attempted to release asset that doesn't exist: userId={}, assetName={}", userId, assetName);
         }
     }
-
-    public void transferAsset(Long fromUserId, Long toUserId, String assetName, BigDecimal amount) {
-        logger.info("Attempting to transfer asset from user: {} to user: {}, asset: {}, amount: {}",
-            fromUserId, toUserId, assetName, amount);
-
-        // Transfer from source user
-        Optional<Asset> fromAssetOpt = assetRepository.findByUserIdAndAssetName(fromUserId, assetName);
-        if (fromAssetOpt.isPresent()) {
-            Asset fromAsset = fromAssetOpt.get();
-            BigDecimal newSize = fromAsset.getSize().subtract(amount);
-            BigDecimal newUsableSize = fromAsset.getUsableSize().subtract(amount);
-            fromAsset.setSize(newSize);
-            fromAsset.setUsableSize(newUsableSize);
-            assetRepository.save(fromAsset);
-            logger.info("Asset deducted from source user: {}, asset: {}, amount: {}, new size: {}, new usable size: {}",
-                fromUserId, assetName, amount, newSize, newUsableSize);
-        } else {
-            logger.warn("Source asset not found for transfer - fromUserId: {}, assetName: {}", fromUserId, assetName);
-        }
-
-        // Transfer to destination user
-        Optional<Asset> toAssetOpt = assetRepository.findByUserIdAndAssetName(toUserId, assetName);
-        if (toAssetOpt.isPresent()) {
-            Asset toAsset = toAssetOpt.get();
-            BigDecimal newSize = toAsset.getSize().add(amount);
-            BigDecimal newUsableSize = toAsset.getUsableSize().add(amount);
-            toAsset.setSize(newSize);
-            toAsset.setUsableSize(newUsableSize);
-            assetRepository.save(toAsset);
-            logger.info("Asset added to destination user: {}, asset: {}, amount: {}, new size: {}, new usable size: {}",
-                toUserId, assetName, amount, newSize, newUsableSize);
-        } else {
-            Asset newAsset = new Asset(toUserId, assetName, amount, amount);
-            assetRepository.save(newAsset);
-            logger.info("New asset created for destination user: {}, asset: {}, amount: {}",
-                toUserId, assetName, amount);
-        }
-
-        logger.info("Asset transfer completed successfully from user: {} to user: {}, asset: {}, amount: {}",
-            fromUserId, toUserId, assetName, amount);
-    }
 }
