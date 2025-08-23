@@ -51,6 +51,50 @@ A comprehensive Spring Boot application for managing stock orders in a brokerage
    - Regular customers can only access their own data
    - Basic authentication using username/password headers
 
+
+## Detailed Business Rules
+
+### 1. Order Creation Rules (POST /api/orders) 
+#### Rule 1.1: Mandatory Fields Validation
+* Description: All required fields for order creation must be present and valid.
+* Conditions:
+    - assetName must be a non-blank string.
+    - orderSide must be either BUY or SELL.
+    - size must be a positive number greater than zero.
+    - price must be a positive number greater than zero.
+* Action: If any condition fails, reject the request with a 400 Bad Request error, specifying the invalid field.
+
+#### Rule 1.2: Sufficient Usable Balance Check
+* Description: A customer must have sufficient usable balance to cover a new order.
+* Conditions:
+    - For a BUY order: (order.size * order.price) <= customer's TRY asset.usableSize
+    - For a SELL order: order.size <= customer's [assetName] asset.usableSize
+* Action: If the condition fails, reject the request with a 409 Conflict or 400 Bad Request error and a message like "Insufficient usable balance".
+
+#### Rule 1.3: Asset Existence Check
+* Description: The asset involved in the transaction must exist in the customer's portfolio.
+* Conditions:
+  - For a BUY order: The customer must have a TRY asset record. 
+  - For a SELL order: The customer must have an asset record for the specified assetName.
+* Action: If the asset does not exist, reject the request with a 404 Not Found error. (Alternatively, the system could implicitly create an asset with zero balance, but explicitly failing is safer).
+
+#### Rule 1.4: Order Initialization
+* Description: A newly created order must be in the correct initial state.
+* Conditions: Upon successful validation and balance check.
+* Action: 
+     1. Create a new order record with status PENDING.
+     2. The createDate is set to the current server timestamp.
+     3. The customerId is derived from the authenticated user, not the request body.
+
+#### Rule 1.5: Balance Reservation (Non-Negotiable)
+* Description: The required funds or shares must be immediately reserved upon order creation, making them unavailable for other orders.
+* Conditions: Immediately after Rule 1.4.
+* Action: 
+    - For a BUY order: Subtract (order.size * order.price) from the usableSize of the customer's TRY asset. The total size of the TRY asset remains unchanged at this stage.
+    - For a SELL order: Subtract order.size from the usableSize of the customer's [assetName] asset. The total size of the [assetName] asset remains unchanged at this stage.
+###### Note: This operation MUST be executed within the same database transaction as the order creation to ensure data consistency.
+
+
 ## Technology Stack
 
 - **Framework**: Spring Boot 3.5.5
