@@ -4,10 +4,10 @@
 -- admin password: admin123
 -- customer passwords: pass123
 INSERT INTO users (username, password, role) VALUES
-('admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', 'ADMIN'),
-('customer1', '$2a$10$gSAhZrxMllrbgeg/Qkra6uQqHqmVVWa4qTBg1J8QeWMXPV.dDOGK6', 'CUSTOMER'),
-('customer2', '$2a$10$gSAhZrxMllrbgeg/Qkra6uQqHqmVVWa4qTBg1J8QeWMXPV.dDOGK6', 'CUSTOMER'),
-('customer3', '$2a$10$gSAhZrxMllrbgeg/Qkra6uQqHqmVVWa4qTBg1J8QeWMXPV.dDOGK6', 'CUSTOMER');
+('admin', '$2a$10$2vKSDFpNUmOQHZ4fQeEzxeWH6E4wPEA31J/oDI3Squ.6WasK.nu7W', 'ADMIN'),
+('customer1', '$2a$10$LU5H9bJPDwL0kpqzivgRC.ztYr0C/FHxkI1GbBt2YUP4MrBxge412', 'CUSTOMER'),
+('customer2', '$2a$10$LU5H9bJPDwL0kpqzivgRC.ztYr0C/FHxkI1GbBt2YUP4MrBxge412', 'CUSTOMER'),
+('customer3', '$2a$10$LU5H9bJPDwL0kpqzivgRC.ztYr0C/FHxkI1GbBt2YUP4MrBxge412', 'CUSTOMER');
 
 -- Insert Assets for customers
 -- Customer 1 assets
