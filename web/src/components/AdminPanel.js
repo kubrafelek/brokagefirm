@@ -135,7 +135,7 @@ const AdminPanel = ({ user }) => {
           </Card>
         </Col>
         <Col md={3}>
-          <Card className="bg-info text-white">
+          <Card className="bg-secondary text-white">
             <Card.Body>
               <Card.Title>Matched Today</Card.Title>
               <h3>{allOrders.filter(o => o.status === 'MATCHED').length}</h3>

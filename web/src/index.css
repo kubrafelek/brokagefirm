@@ -1,3 +1,17 @@
+:root {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #3a3a3a;
+  --text-primary: #ffffff;
+  --text-secondary: #b8b8b8;
+  --accent-admin: #dc3545;
+  --accent-customer: #007bff;
+  --border-color: #444444;
+  --success-color: #28a745;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -5,7 +19,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f8f9fa;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 code {
@@ -13,24 +28,96 @@ code {
     monospace;
 }
 
-.navbar-brand {
+/* Admin Layout Styling */
+.admin-layout {
+  background-color: var(--bg-primary);
+  min-height: 100vh;
+}
+
+.admin-navbar {
+  background-color: var(--bg-secondary) !important;
+  border-bottom: 2px solid var(--accent-admin);
+}
+
+.admin-navbar .navbar-brand {
   font-weight: bold;
-  color: #007bff !important;
+  color: var(--accent-admin) !important;
 }
 
-.card {
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-  border: 1px solid rgba(0, 0, 0, 0.125);
+.admin-navbar .nav-link {
+  color: var(--text-secondary) !important;
+  transition: color 0.3s ease;
 }
 
-.card-header {
-  background-color: #f8f9fa;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+.admin-navbar .nav-link:hover {
+  color: var(--accent-admin) !important;
 }
 
+.admin-content {
+  background-color: var(--bg-primary);
+  padding: 2rem 0;
+}
+
+.admin-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+}
+
+.admin-card .card-header {
+  background-color: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+/* Customer Layout Styling */
+.customer-layout {
+  background-color: var(--bg-primary);
+  min-height: 100vh;
+}
+
+.customer-navbar {
+  background-color: var(--bg-secondary) !important;
+  border-bottom: 2px solid var(--accent-customer);
+}
+
+.customer-navbar .navbar-brand {
+  font-weight: bold;
+  color: var(--accent-customer) !important;
+}
+
+.customer-navbar .nav-link {
+  color: var(--text-secondary) !important;
+  transition: color 0.3s ease;
+}
+
+.customer-navbar .nav-link:hover {
+  color: var(--accent-customer) !important;
+}
+
+.customer-content {
+  background-color: var(--bg-primary);
+  padding: 2rem 0;
+}
+
+.customer-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+}
+
+.customer-card .card-header {
+  background-color: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+/* Common Dark Mode Overrides */
 .btn-primary {
-  background-color: #007bff;
-  border-color: #007bff;
+  background-color: var(--accent-customer);
+  border-color: var(--accent-customer);
 }
 
 .btn-primary:hover {
@@ -38,26 +125,94 @@ code {
   border-color: #0056b3;
 }
 
+.btn-danger {
+  background-color: var(--accent-admin);
+  border-color: var(--accent-admin);
+}
+
+.btn-outline-light {
+  border-color: var(--text-secondary);
+  color: var(--text-secondary);
+}
+
+.btn-outline-light:hover {
+  background-color: var(--text-secondary);
+  color: var(--bg-primary);
+}
+
+.table-dark {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+.table-dark th,
+.table-dark td {
+  border-color: var(--border-color);
+}
+
 .table-hover tbody tr:hover {
-  background-color: rgba(0, 0, 0, 0.075);
+  background-color: rgba(255, 255, 255, 0.075);
+}
+
+.form-control {
+  background-color: var(--bg-tertiary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.form-control:focus {
+  background-color: var(--bg-tertiary);
+  border-color: var(--accent-customer);
+  color: var(--text-primary);
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.modal-content {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.modal-header {
+  border-bottom-color: var(--border-color);
+}
+
+.modal-footer {
+  border-top-color: var(--border-color);
+}
+
+.badge {
+  color: var(--bg-primary) !important;
+}
+
+.card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+}
+
+.card-header {
+  background-color: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
 }
 
 .status-pending {
-  color: #856404;
-  background-color: #fff3cd;
-  border-color: #ffeaa7;
+  color: #ffc107;
+  background-color: rgba(255, 193, 7, 0.1);
+  border-color: #ffc107;
 }
 
 .status-matched {
-  color: #155724;
-  background-color: #d4edda;
-  border-color: #c3e6cb;
+  color: var(--success-color);
+  background-color: rgba(40, 167, 69, 0.1);
+  border-color: var(--success-color);
 }
 
 .status-cancelled {
-  color: #721c24;
-  background-color: #f8d7da;
-  border-color: #f5c6cb;
+  color: var(--danger-color);
+  background-color: rgba(220, 53, 69, 0.1);
+  border-color: var(--danger-color);
 }
 
 .login-container {
@@ -65,25 +220,30 @@ code {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
 }
 
 .login-card {
   width: 100%;
   max-width: 400px;
-  background: white;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
 }
 
 .dashboard-stats {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--accent-customer) 0%, #0056b3 100%);
   color: white;
   border-radius: 10px;
 }
 
 .asset-card {
   transition: transform 0.2s;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
 }
 
 .asset-card:hover {
@@ -91,9 +251,11 @@ code {
 }
 
 .order-form {
-  background: #f8f9fa;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 20px;
+  color: var(--text-primary);
 }
 
 .spinner-container {

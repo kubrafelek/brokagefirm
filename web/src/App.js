@@ -7,7 +7,8 @@ import Dashboard from './components/Dashboard';
 import Orders from './components/Orders';
 import Assets from './components/Assets';
 import AdminPanel from './components/AdminPanel';
-import Navigation from './components/Navigation';
+import AdminLayout from './components/AdminLayout';
+import CustomerLayout from './components/CustomerLayout';
 import LoadingSpinner from './components/LoadingSpinner';
 
 function App() {
@@ -39,29 +40,72 @@ function App() {
   return (
     <Router>
       <div className="App">
-        {user && <Navigation user={user} onLogout={handleLogout} />}
-
         <Routes>
           <Route
             path="/login"
             element={!user ? <Login onLogin={handleLogin} /> : <Navigate to={user.isAdmin ? "/admin" : "/dashboard"} />}
           />
+
+          {/* Admin Routes */}
+          <Route
+            path="/admin"
+            element={user && user.isAdmin ? (
+              <AdminLayout user={user} onLogout={handleLogout}>
+                <AdminPanel user={user} />
+              </AdminLayout>
+            ) : <Navigate to="/login" />}
+          />
+          <Route
+            path="/admin/users"
+            element={user && user.isAdmin ? (
+              <AdminLayout user={user} onLogout={handleLogout}>
+                <AdminPanel user={user} />
+              </AdminLayout>
+            ) : <Navigate to="/login" />}
+          />
+
+          {/* Customer Routes */}
           <Route
             path="/dashboard"
-            element={user ? <Dashboard user={user} /> : <Navigate to="/login" />}
+            element={user && !user.isAdmin ? (
+              <CustomerLayout user={user} onLogout={handleLogout}>
+                <Dashboard user={user} />
+              </CustomerLayout>
+            ) : user && user.isAdmin ? <Navigate to="/admin" /> : <Navigate to="/login" />}
           />
           <Route
             path="/orders"
-            element={user ? <Orders user={user} /> : <Navigate to="/login" />}
+            element={user && !user.isAdmin ? (
+              <CustomerLayout user={user} onLogout={handleLogout}>
+                <Orders user={user} />
+              </CustomerLayout>
+            ) : user && user.isAdmin ? <Navigate to="/admin" /> : <Navigate to="/login" />}
           />
           <Route
             path="/assets"
-            element={user ? <Assets user={user} /> : <Navigate to="/login" />}
+            element={user && !user.isAdmin ? (
+              <CustomerLayout user={user} onLogout={handleLogout}>
+                <Assets user={user} />
+              </CustomerLayout>
+            ) : user && user.isAdmin ? <Navigate to="/admin" /> : <Navigate to="/login" />}
           />
           <Route
-            path="/admin"
-            element={user && user.isAdmin ? <AdminPanel user={user} /> : <Navigate to="/dashboard" />}
+            path="/portfolio"
+            element={user && !user.isAdmin ? (
+              <CustomerLayout user={user} onLogout={handleLogout}>
+                <Dashboard user={user} />
+              </CustomerLayout>
+            ) : user && user.isAdmin ? <Navigate to="/admin" /> : <Navigate to="/login" />}
           />
+          <Route
+            path="/profile"
+            element={user && !user.isAdmin ? (
+              <CustomerLayout user={user} onLogout={handleLogout}>
+                <Dashboard user={user} />
+              </CustomerLayout>
+            ) : user && user.isAdmin ? <Navigate to="/admin" /> : <Navigate to="/login" />}
+          />
+
           <Route
             path="/"
             element={<Navigate to={user ? (user.isAdmin ? "/admin" : "/dashboard") : "/login"} />}
@@ -78,6 +122,7 @@ function App() {
           pauseOnFocusLoss
           draggable
           pauseOnHover
+          theme="dark"
         />
       </div>
     </Router>
