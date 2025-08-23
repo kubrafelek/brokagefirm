@@ -167,70 +167,12 @@ public class OrderService {
 
         if (order.getOrderSide() == OrderSide.BUY) {
             logger.info("Processing BUY order match - deducting TRY and adding target asset");
-
-            // Deduct TRY from user
-            Optional<Asset> tryAssetOpt = assetRepository.findByUserIdAndAssetName(order.getUserId(), TRY_ASSET);
-            if (tryAssetOpt.isPresent()) {
-                Asset tryAsset = tryAssetOpt.get();
-                BigDecimal newTrySize = tryAsset.getSize().subtract(totalAmount);
-                tryAsset.setSize(newTrySize);
-                assetRepository.save(tryAsset);
-                logger.info("Deducted TRY from user: {}, amount: {}, new size: {}",
-                    order.getUserId(), totalAmount, newTrySize);
-            } else {
-                logger.warn("TRY asset not found for user: {} during BUY order match", order.getUserId());
-            }
-
-            // Add target asset to user
-            Optional<Asset> targetAssetOpt = assetRepository.findByUserIdAndAssetName(order.getUserId(), order.getAssetName());
-            if (targetAssetOpt.isPresent()) {
-                Asset targetAsset = targetAssetOpt.get();
-                BigDecimal newSize = targetAsset.getSize().add(order.getSize());
-                BigDecimal newUsableSize = targetAsset.getUsableSize().add(order.getSize());
-                targetAsset.setSize(newSize);
-                targetAsset.setUsableSize(newUsableSize);
-                assetRepository.save(targetAsset);
-                logger.info("Added {} to existing asset for user: {}, amount: {}, new size: {}, new usable size: {}",
-                    order.getAssetName(), order.getUserId(), order.getSize(), newSize, newUsableSize);
-            } else {
-                Asset newAsset = new Asset(order.getUserId(), order.getAssetName(), order.getSize(), order.getSize());
-                assetRepository.save(newAsset);
-                logger.info("Created new {} asset for user: {}, size: {}",
-                    order.getAssetName(), order.getUserId(), order.getSize());
-            }
+            getDeductMoneyFromUser(order, totalAmount);
+            addAssetToUser(order);
         } else {
             logger.info("Processing SELL order match - deducting target asset and adding TRY");
-
-            // Deduct target asset from user
-            Optional<Asset> assetOpt = assetRepository.findByUserIdAndAssetName(order.getUserId(), order.getAssetName());
-            if (assetOpt.isPresent()) {
-                Asset asset = assetOpt.get();
-                BigDecimal newSize = asset.getSize().subtract(order.getSize());
-                asset.setSize(newSize);
-                assetRepository.save(asset);
-                logger.info("Deducted {} from user: {}, amount: {}, new size: {}",
-                    order.getAssetName(), order.getUserId(), order.getSize(), newSize);
-            } else {
-                logger.warn("{} asset not found for user: {} during SELL order match",
-                    order.getAssetName(), order.getUserId());
-            }
-
-            // Add TRY to user
-            Optional<Asset> tryAssetOpt = assetRepository.findByUserIdAndAssetName(order.getUserId(), TRY_ASSET);
-            if (tryAssetOpt.isPresent()) {
-                Asset tryAsset = tryAssetOpt.get();
-                BigDecimal newSize = tryAsset.getSize().add(totalAmount);
-                BigDecimal newUsableSize = tryAsset.getUsableSize().add(totalAmount);
-                tryAsset.setSize(newSize);
-                tryAsset.setUsableSize(newUsableSize);
-                assetRepository.save(tryAsset);
-                logger.info("Added TRY to existing asset for user: {}, amount: {}, new size: {}, new usable size: {}",
-                    order.getUserId(), totalAmount, newSize, newUsableSize);
-            } else {
-                Asset newTryAsset = new Asset(order.getUserId(), TRY_ASSET, totalAmount, totalAmount);
-                assetRepository.save(newTryAsset);
-                logger.info("Created new TRY asset for user: {}, amount: {}", order.getUserId(), totalAmount);
-            }
+            getDeductTargetAssetFromUser(order);
+            addMoneyToUser(order, totalAmount);
         }
 
         order.setStatus(OrderStatus.MATCHED);
@@ -238,5 +180,75 @@ public class OrderService {
         logger.info("Order matched successfully - orderId: {}, user: {}, asset: {}, side: {}",
             orderId, order.getUserId(), order.getAssetName(), order.getOrderSide());
         return matchedOrder;
+    }
+
+    private void addMoneyToUser(Order order, BigDecimal totalAmount) {
+        // Add TRY to user
+        Optional<Asset> tryAssetOpt = assetRepository.findByUserIdAndAssetName(order.getUserId(), TRY_ASSET);
+        if (tryAssetOpt.isPresent()) {
+            Asset tryAsset = tryAssetOpt.get();
+            BigDecimal newSize = tryAsset.getSize().add(totalAmount);
+            BigDecimal newUsableSize = tryAsset.getUsableSize().add(totalAmount);
+            tryAsset.setSize(newSize);
+            tryAsset.setUsableSize(newUsableSize);
+            assetRepository.save(tryAsset);
+            logger.info("Added TRY to existing asset for user: {}, amount: {}, new size: {}, new usable size: {}",
+                order.getUserId(), totalAmount, newSize, newUsableSize);
+        } else {
+            Asset newTryAsset = new Asset(order.getUserId(), TRY_ASSET, totalAmount, totalAmount);
+            assetRepository.save(newTryAsset);
+            logger.info("Created new TRY asset for user: {}, amount: {}", order.getUserId(), totalAmount);
+        }
+    }
+
+    private void getDeductTargetAssetFromUser(Order order) {
+        // Deduct target asset from user
+        Optional<Asset> assetOpt = assetRepository.findByUserIdAndAssetName(order.getUserId(), order.getAssetName());
+        if (assetOpt.isPresent()) {
+            Asset asset = assetOpt.get();
+            BigDecimal newSize = asset.getSize().subtract(order.getSize());
+            asset.setSize(newSize);
+            assetRepository.save(asset);
+            logger.info("Deducted {} from user: {}, amount: {}, new size: {}",
+                order.getAssetName(), order.getUserId(), order.getSize(), newSize);
+        } else {
+            logger.warn("{} asset not found for user: {} during SELL order match",
+                order.getAssetName(), order.getUserId());
+        }
+    }
+
+    private void addAssetToUser(Order order) {
+        // Add target asset to user
+        Optional<Asset> targetAssetOpt = assetRepository.findByUserIdAndAssetName(order.getUserId(), order.getAssetName());
+        if (targetAssetOpt.isPresent()) {
+            Asset targetAsset = targetAssetOpt.get();
+            BigDecimal newSize = targetAsset.getSize().add(order.getSize());
+            BigDecimal newUsableSize = targetAsset.getUsableSize().add(order.getSize());
+            targetAsset.setSize(newSize);
+            targetAsset.setUsableSize(newUsableSize);
+            assetRepository.save(targetAsset);
+            logger.info("Added {} to existing asset for user: {}, amount: {}, new size: {}, new usable size: {}",
+                order.getAssetName(), order.getUserId(), order.getSize(), newSize, newUsableSize);
+        } else {
+            Asset newAsset = new Asset(order.getUserId(), order.getAssetName(), order.getSize(), order.getSize());
+            assetRepository.save(newAsset);
+            logger.info("Created new {} asset for user: {}, size: {}",
+                order.getAssetName(), order.getUserId(), order.getSize());
+        }
+    }
+
+    private void getDeductMoneyFromUser(Order order, BigDecimal totalAmount) {
+        // Deduct TRY from user
+        Optional<Asset> tryAssetOpt = assetRepository.findByUserIdAndAssetName(order.getUserId(), TRY_ASSET);
+        if (tryAssetOpt.isPresent()) {
+            Asset tryAsset = tryAssetOpt.get();
+            BigDecimal newTrySize = tryAsset.getSize().subtract(totalAmount);
+            tryAsset.setSize(newTrySize);
+            assetRepository.save(tryAsset);
+            logger.info("Deducted TRY from user: {}, amount: {}, new size: {}",
+                order.getUserId(), totalAmount, newTrySize);
+        } else {
+            logger.warn("TRY asset not found for user: {} during BUY order match", order.getUserId());
+        }
     }
 }
