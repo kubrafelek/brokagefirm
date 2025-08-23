@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,6 +30,8 @@ class EndToEndWorkflowIT extends BaseIT {
     private static final String ORDERS_MATCH_URL = "/api/orders/match";
     private static final String ORDERS_PENDING_URL = "/api/orders/pending";
     private static final String ASSETS_URL = "/api/assets";
+
+    private static final LocalDateTime FIXED_DATE = LocalDateTime.of(2025, 8, 21, 16, 0, 0);
 
     @Test
     @DisplayName("Complete trading workflow: Login -> Check Assets -> Create Order -> Match -> Verify")
@@ -56,7 +59,7 @@ class EndToEndWorkflowIT extends BaseIT {
 
         // 3. Customer creates a BUY order
         CreateOrderRequest buyOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(2.0), BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(2.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         MvcResult orderResult = mockMvc.perform(post(ORDERS_URL)
                 .headers(customerHeaders)
@@ -116,7 +119,7 @@ class EndToEndWorkflowIT extends BaseIT {
 
         // 2. Create SELL order
         CreateOrderRequest sellOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.SELL, BigDecimal.valueOf(3.0), BigDecimal.valueOf(155.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.SELL, BigDecimal.valueOf(3.0), BigDecimal.valueOf(155.00), FIXED_DATE);
 
         MvcResult orderResult = mockMvc.perform(post(ORDERS_URL)
                 .headers(customerHeaders)
@@ -166,7 +169,7 @@ class EndToEndWorkflowIT extends BaseIT {
 
         // 2. Create BUY order that reserves TRY
         CreateOrderRequest buyOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(4.0), BigDecimal.valueOf(100.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(4.0), BigDecimal.valueOf(100.00), FIXED_DATE);
 
         MvcResult orderResult = mockMvc.perform(post(ORDERS_URL)
                 .headers(customerHeaders)
@@ -231,10 +234,10 @@ class EndToEndWorkflowIT extends BaseIT {
 
         // 3. Admin creates orders for different customers
         CreateOrderRequest orderForCustomer1 = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         CreateOrderRequest orderForCustomer2 = new CreateOrderRequest(
-                CUSTOMER2_ID, "MSFT", OrderSide.BUY, BigDecimal.valueOf(2.0), BigDecimal.valueOf(400.00));
+                CUSTOMER2_ID, "MSFT", OrderSide.BUY, BigDecimal.valueOf(2.0), BigDecimal.valueOf(400.00), FIXED_DATE);
 
         MvcResult order1Result = mockMvc.perform(post(ORDERS_URL)
                 .headers(adminHeaders)
@@ -300,7 +303,7 @@ class EndToEndWorkflowIT extends BaseIT {
 
         // 2. Customer1 creates a buy order
         CreateOrderRequest customer1BuyOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, "GOOGL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(2800.00));
+                CUSTOMER1_ID, "GOOGL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(2800.00), FIXED_DATE);
 
         MvcResult customer1OrderResult = mockMvc.perform(post(ORDERS_URL)
                 .headers(customer1Headers)
@@ -314,7 +317,7 @@ class EndToEndWorkflowIT extends BaseIT {
 
         // 3. Customer2 creates a sell order
         CreateOrderRequest customer2SellOrder = new CreateOrderRequest(
-                CUSTOMER2_ID, "MSFT", OrderSide.SELL, BigDecimal.valueOf(5.0), BigDecimal.valueOf(420.00));
+                CUSTOMER2_ID, "MSFT", OrderSide.SELL, BigDecimal.valueOf(5.0), BigDecimal.valueOf(420.00), FIXED_DATE);
 
         MvcResult customer2OrderResult = mockMvc.perform(post(ORDERS_URL)
                 .headers(customer2Headers)
@@ -370,7 +373,7 @@ class EndToEndWorkflowIT extends BaseIT {
 
         // 1. Customer attempts to create order with insufficient balance
         CreateOrderRequest insufficientBalanceOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(100.0), BigDecimal.valueOf(200.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(100.0), BigDecimal.valueOf(200.00), FIXED_DATE);
 
         mockMvc.perform(post(ORDERS_URL)
                 .headers(customerHeaders)
@@ -381,7 +384,7 @@ class EndToEndWorkflowIT extends BaseIT {
 
         // 2. Customer creates valid order
         CreateOrderRequest validOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(2.0), BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(2.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         MvcResult orderResult = mockMvc.perform(post(ORDERS_URL)
                 .headers(customerHeaders)

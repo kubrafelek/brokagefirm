@@ -10,13 +10,14 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Integration tests for order management endpoints
+ * Integration tests for order management functionality
  */
 @DisplayName("Order Management Integration Tests")
 class OrderIT extends BaseIT {
@@ -25,11 +26,13 @@ class OrderIT extends BaseIT {
     private static final String ORDERS_MATCH_URL = "/api/orders/match";
     private static final String ORDERS_PENDING_URL = "/api/orders/pending";
 
+    private static final LocalDateTime FIXED_DATE = LocalDateTime.of(2025, 8, 21, 16, 0, 0);
+
     @Test
     @DisplayName("Should create BUY order successfully for customer")
     void testCreateBuyOrder_Success() throws Exception {
         CreateOrderRequest request = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(2.0), BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(2.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         HttpHeaders headers = createCustomer1Headers();
 
@@ -51,7 +54,7 @@ class OrderIT extends BaseIT {
     @DisplayName("Should create SELL order successfully for customer")
     void testCreateSellOrder_Success() throws Exception {
         CreateOrderRequest request = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.SELL, BigDecimal.valueOf(3.0), BigDecimal.valueOf(155.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.SELL, BigDecimal.valueOf(3.0), BigDecimal.valueOf(155.00), FIXED_DATE);
 
         HttpHeaders headers = createCustomer1Headers();
 
@@ -73,7 +76,7 @@ class OrderIT extends BaseIT {
     @DisplayName("Should reject BUY order with insufficient TRY balance")
     void testCreateBuyOrder_InsufficientBalance() throws Exception {
         CreateOrderRequest request = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(100.0), BigDecimal.valueOf(200.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(100.0), BigDecimal.valueOf(200.00), FIXED_DATE);
 
         HttpHeaders headers = createCustomer1Headers();
 
@@ -90,7 +93,7 @@ class OrderIT extends BaseIT {
     @DisplayName("Should reject SELL order with insufficient asset balance")
     void testCreateSellOrder_InsufficientBalance() throws Exception {
         CreateOrderRequest request = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.SELL, BigDecimal.valueOf(50.0), BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.SELL, BigDecimal.valueOf(50.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         HttpHeaders headers = createCustomer1Headers();
 
@@ -107,7 +110,7 @@ class OrderIT extends BaseIT {
     @DisplayName("Should reject order creation for different customer")
     void testCreateOrder_UnauthorizedUser() throws Exception {
         CreateOrderRequest request = new CreateOrderRequest(
-                CUSTOMER2_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(2.0), BigDecimal.valueOf(150.00));
+                CUSTOMER2_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(2.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         HttpHeaders headers = createCustomer1Headers(); // customer1 trying to create order for customer2
 
@@ -124,7 +127,7 @@ class OrderIT extends BaseIT {
     @DisplayName("Should allow admin to create order for any customer")
     void testCreateOrder_AdminForCustomer() throws Exception {
         CreateOrderRequest request = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         HttpHeaders headers = createAdminHeaders();
 
@@ -195,7 +198,7 @@ class OrderIT extends BaseIT {
     void testCancelOrder_Customer() throws Exception {
         // First create an order to cancel
         CreateOrderRequest createRequest = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         HttpHeaders headers = createCustomer1Headers();
 
@@ -225,7 +228,7 @@ class OrderIT extends BaseIT {
 
         // Create order as customer1
         CreateOrderRequest createRequest = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         MvcResult createResult = mockMvc.perform(post(ORDERS_URL)
                 .headers(customer1Headers)
@@ -251,7 +254,7 @@ class OrderIT extends BaseIT {
     void testCancelOrder_Admin() throws Exception {
         // Create order as customer
         CreateOrderRequest createRequest = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         HttpHeaders customerHeaders = createCustomer1Headers();
         HttpHeaders adminHeaders = createAdminHeaders();
@@ -279,7 +282,7 @@ class OrderIT extends BaseIT {
     void testMatchOrder_Admin() throws Exception {
         // Create a pending order first
         CreateOrderRequest createRequest = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         HttpHeaders customerHeaders = createCustomer1Headers();
         HttpHeaders adminHeaders = createAdminHeaders();
@@ -350,7 +353,7 @@ class OrderIT extends BaseIT {
     @DisplayName("Should reject order operations without authentication")
     void testOrderOperations_NoAuth() throws Exception {
         CreateOrderRequest createRequest = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         // Test create order without auth
         mockMvc.perform(post(ORDERS_URL)

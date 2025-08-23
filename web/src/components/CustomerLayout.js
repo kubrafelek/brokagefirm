@@ -8,7 +8,7 @@ const CustomerLayout = ({ user, onLogout, children }) => {
       <Navbar className="customer-navbar" variant="dark" expand="lg" sticky="top">
         <Container>
           <Navbar.Brand as={Link} to="/dashboard">
-            💼 Brokerage Firm
+            💼 Brokage Firm
           </Navbar.Brand>
 
           <Navbar.Toggle aria-controls="customer-navbar-nav" />
@@ -18,7 +18,6 @@ const CustomerLayout = ({ user, onLogout, children }) => {
               <Nav.Link as={Link} to="/orders">My Orders</Nav.Link>
               <Nav.Link as={Link} to="/assets">My Assets</Nav.Link>
               <Nav.Link as={Link} to="/portfolio">Portfolio</Nav.Link>
-              <Nav.Link as={Link} to="/profile">Profile</Nav.Link>
             </Nav>
 
             <Nav>

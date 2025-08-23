@@ -7,7 +7,7 @@ const Navigation = ({ user, onLogout }) => {
     <Navbar bg="dark" variant="dark" expand="lg" sticky="top">
       <Container>
         <Navbar.Brand as={Link} to="/dashboard">
-          💼 Brokerage Firm
+          💼 Brokage Firm
         </Navbar.Brand>
 
         <Navbar.Toggle aria-controls="basic-navbar-nav" />

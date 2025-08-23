@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -26,6 +27,8 @@ class AdminFunctionalityIT extends BaseIT {
     private static final String ORDERS_PENDING_URL = "/api/orders/pending";
     private static final String ASSETS_URL = "/api/assets";
 
+    private static final LocalDateTime FIXED_DATE = LocalDateTime.of(2025, 8, 21, 16, 0, 0);
+
     @Test
     @DisplayName("Admin should be able to create orders for any customer")
     void testAdminCreateOrderForAnyCustomer() throws Exception {
@@ -33,7 +36,7 @@ class AdminFunctionalityIT extends BaseIT {
 
         // Create order for customer1
         CreateOrderRequest orderForCustomer1 = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(2.0), BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(2.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         mockMvc.perform(post(ORDERS_URL)
                 .headers(adminHeaders)
@@ -48,7 +51,7 @@ class AdminFunctionalityIT extends BaseIT {
 
         // Create order for customer2
         CreateOrderRequest orderForCustomer2 = new CreateOrderRequest(
-                CUSTOMER2_ID, "MSFT", OrderSide.BUY, BigDecimal.valueOf(3.0), BigDecimal.valueOf(400.00));
+                CUSTOMER2_ID, "MSFT", OrderSide.BUY, BigDecimal.valueOf(3.0), BigDecimal.valueOf(400.00), FIXED_DATE);
 
         mockMvc.perform(post(ORDERS_URL)
                 .headers(adminHeaders)
@@ -126,7 +129,7 @@ class AdminFunctionalityIT extends BaseIT {
 
         // Customer creates an order
         CreateOrderRequest createRequest = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         MvcResult createResult = mockMvc.perform(post(ORDERS_URL)
                 .headers(customerHeaders)
@@ -155,7 +158,7 @@ class AdminFunctionalityIT extends BaseIT {
 
         // Customer creates a buy order
         CreateOrderRequest buyOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         MvcResult createResult = mockMvc.perform(post(ORDERS_URL)
                 .headers(customerHeaders)
@@ -201,7 +204,7 @@ class AdminFunctionalityIT extends BaseIT {
 
         // 1. Admin creates order for customer
         CreateOrderRequest adminCreateOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         MvcResult adminCreateResult = mockMvc.perform(post(ORDERS_URL)
                 .headers(adminHeaders)
@@ -215,7 +218,7 @@ class AdminFunctionalityIT extends BaseIT {
 
         // 2. Customer creates their own order
         CreateOrderRequest customerCreateOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, "GOOGL", OrderSide.SELL, BigDecimal.valueOf(2.0), BigDecimal.valueOf(2800.00));
+                CUSTOMER1_ID, "GOOGL", OrderSide.SELL, BigDecimal.valueOf(2.0), BigDecimal.valueOf(2800.00), FIXED_DATE);
 
         MvcResult customerCreateResult = mockMvc.perform(post(ORDERS_URL)
                 .headers(customerHeaders)
@@ -276,7 +279,7 @@ class AdminFunctionalityIT extends BaseIT {
 
         // Create sell order for customer1 who has AAPL assets
         CreateOrderRequest sellOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.SELL, BigDecimal.valueOf(5.0), BigDecimal.valueOf(155.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.SELL, BigDecimal.valueOf(5.0), BigDecimal.valueOf(155.00), FIXED_DATE);
 
         mockMvc.perform(post(ORDERS_URL)
                 .headers(adminHeaders)
@@ -296,7 +299,7 @@ class AdminFunctionalityIT extends BaseIT {
 
         // Try to create order that would exceed customer's balance
         CreateOrderRequest invalidOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1000.0), BigDecimal.valueOf(200.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1000.0), BigDecimal.valueOf(200.00), FIXED_DATE);
 
         mockMvc.perform(post(ORDERS_URL)
                 .headers(adminHeaders)
@@ -314,11 +317,11 @@ class AdminFunctionalityIT extends BaseIT {
         // Create multiple orders for different customers
         CreateOrderRequest[] orders = {
                 new CreateOrderRequest(CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0),
-                        BigDecimal.valueOf(150.00)),
+                        BigDecimal.valueOf(150.00), FIXED_DATE),
                 new CreateOrderRequest(CUSTOMER2_ID, "MSFT", OrderSide.BUY, BigDecimal.valueOf(2.0),
-                        BigDecimal.valueOf(400.00)),
+                        BigDecimal.valueOf(400.00), FIXED_DATE),
                 new CreateOrderRequest(TEST_USER_ID, "NVDA", OrderSide.SELL, BigDecimal.valueOf(3.0),
-                        BigDecimal.valueOf(800.00))
+                        BigDecimal.valueOf(800.00), FIXED_DATE)
         };
 
         // Create all orders

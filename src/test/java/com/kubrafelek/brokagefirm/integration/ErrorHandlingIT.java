@@ -10,7 +10,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -26,12 +28,14 @@ class ErrorHandlingIT extends BaseIT {
     private static final String ORDERS_PENDING_URL = "/api/orders/pending";
     private static final String ASSETS_URL = "/api/assets";
 
+    private static final LocalDateTime FIXED_DATE = LocalDateTime.of(2025, 8, 21, 16, 0, 0);
+
     @Test
     @DisplayName("Should reject all requests without authentication headers")
     void testEndpointsRequireAuthentication() throws Exception {
         // Test order creation without auth
         CreateOrderRequest orderRequest = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         mockMvc.perform(post(ORDERS_URL)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -104,7 +108,7 @@ class ErrorHandlingIT extends BaseIT {
 
         // Test invalid order request - negative price
         CreateOrderRequest invalidPriceOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(-1.0), BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(-1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         mockMvc.perform(post(ORDERS_URL)
                 .headers(customerHeaders)
@@ -114,7 +118,7 @@ class ErrorHandlingIT extends BaseIT {
 
         // Test invalid order request - zero size
         CreateOrderRequest zeroSizeOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.ZERO, BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.ZERO, BigDecimal.valueOf(150.00), FIXED_DATE);
 
         mockMvc.perform(post(ORDERS_URL)
                 .headers(customerHeaders)
@@ -124,7 +128,7 @@ class ErrorHandlingIT extends BaseIT {
 
         // Test invalid order request - null asset name
         CreateOrderRequest nullAssetOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, null, OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00));
+                CUSTOMER1_ID, null, OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
 
         mockMvc.perform(post(ORDERS_URL)
                 .headers(customerHeaders)
@@ -155,7 +159,102 @@ class ErrorHandlingIT extends BaseIT {
         mockMvc.perform(post(ORDERS_URL)
                 .headers(customerHeaders)
                 .content(toJson(new CreateOrderRequest(
-                        CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00)))))
+                        CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE))))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Should handle insufficient balance for buy orders gracefully")
+    void testInsufficientBalanceForBuyOrder() throws Exception {
+        HttpHeaders customerHeaders = createCustomer1Headers();
+
+        // Customer1 has 10,000 TRY but tries to buy 100 shares at 200 TRY each (20,000 TRY total)
+        CreateOrderRequest orderRequest = new CreateOrderRequest(
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(100.0), BigDecimal.valueOf(200.00), FIXED_DATE);
+
+        mockMvc.perform(post(ORDERS_URL)
+                .headers(customerHeaders)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(orderRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("Insufficient balance")));
+    }
+
+    @Test
+    @DisplayName("Should handle insufficient assets for sell orders gracefully")
+    void testInsufficientAssetsForSellOrder() throws Exception {
+        HttpHeaders customerHeaders = createCustomer1Headers();
+
+        // Customer1 has 10 AAPL but tries to sell 50
+        CreateOrderRequest oversellOrder = new CreateOrderRequest(
+                CUSTOMER1_ID, "AAPL", OrderSide.SELL, BigDecimal.valueOf(50.0), BigDecimal.valueOf(150.00), FIXED_DATE);
+
+        mockMvc.perform(post(ORDERS_URL)
+                .headers(customerHeaders)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(oversellOrder)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("Insufficient assets")));
+
+        // Customer1 tries to sell an asset they don't have
+        CreateOrderRequest nonExistentAssetOrder = new CreateOrderRequest(
+                CUSTOMER1_ID, "TSLA", OrderSide.SELL, BigDecimal.valueOf(1.0), BigDecimal.valueOf(800.00), FIXED_DATE);
+
+        mockMvc.perform(post(ORDERS_URL)
+                .headers(customerHeaders)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(nonExistentAssetOrder)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("Insufficient assets")));
+
+        // Customer tries to sell with null asset name
+        CreateOrderRequest nullAssetOrder = new CreateOrderRequest(
+                CUSTOMER1_ID, null, OrderSide.SELL, BigDecimal.valueOf(1.0), BigDecimal.valueOf(100.00), FIXED_DATE);
+
+        mockMvc.perform(post(ORDERS_URL)
+                .headers(customerHeaders)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(nullAssetOrder)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("Asset name must not be null")));
+    }
+
+    @Test
+    @DisplayName("Should handle validation errors for invalid order data")
+    void testInvalidOrderDataValidation() throws Exception {
+        HttpHeaders customerHeaders = createCustomer1Headers();
+
+        // Try order with negative size
+        CreateOrderRequest negativeOrder = new CreateOrderRequest(
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(-1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
+
+        mockMvc.perform(post(ORDERS_URL)
+                .headers(customerHeaders)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(negativeOrder)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("Order size must be positive")));
+
+        // Try order with zero price
+        CreateOrderRequest zeroPriceOrder = new CreateOrderRequest(
+                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.ZERO, FIXED_DATE);
+
+        mockMvc.perform(post(ORDERS_URL)
+                .headers(customerHeaders)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(zeroPriceOrder)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("Order price must be positive")));
+
+        // Try order with null order side
+        CreateOrderRequest nullSideOrder = new CreateOrderRequest(
+                CUSTOMER1_ID, "AAPL", null, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
+
+        mockMvc.perform(post(ORDERS_URL)
+                .headers(customerHeaders)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(nullSideOrder)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("Order side must not be null")));
     }
 }

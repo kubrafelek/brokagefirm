@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Schema(description = "Request object for creating a new order")
 public class CreateOrderRequest {
@@ -32,12 +33,17 @@ public class CreateOrderRequest {
     @Schema(description = "Price per share", example = "150.00")
     private BigDecimal price;
 
-    public CreateOrderRequest(Long userId, String assetName, OrderSide side, BigDecimal size, BigDecimal price) {
+    @Schema(description = "Timestamp when the order was created", example = "2023-10-05T14:48:00")
+    private LocalDateTime createdAt;
+
+
+    public CreateOrderRequest(Long userId, String assetName, OrderSide side, BigDecimal size, BigDecimal price, LocalDateTime createdAt) {
         this.userId = userId;
         this.assetName = assetName;
         this.side = side;
         this.size = size;
         this.price = price;
+        this.createdAt = createdAt;
     }
 
     public Long getUserId() {
@@ -62,5 +68,9 @@ public class CreateOrderRequest {
 
     public BigDecimal getPrice() {
         return price;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 }
