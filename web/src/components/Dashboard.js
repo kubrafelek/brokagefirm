@@ -91,7 +91,7 @@ const Dashboard = ({ user }) => {
           </Card>
         </Col>
         <Col md={4}>
-          <Card className="bg-info text-white">
+          <Card className="bg-warning text-white">
             <Card.Body>
               <Card.Title>Recent Orders</Card.Title>
               <h3>{recentOrders.length}</h3>

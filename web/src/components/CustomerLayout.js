@@ -22,8 +22,8 @@ const CustomerLayout = ({ user, onLogout, children }) => {
 
             <Nav>
               <Navbar.Text className="me-3">
-                Welcome, {user.username}
-                <span className="badge bg-primary ms-2">Customer</span>
+                Welcome
+                <span className="badge bg-primary ms-2">{user.username}</span>
               </Navbar.Text>
               <Button variant="outline-light" size="sm" onClick={onLogout}>
                 Logout
