@@ -11,12 +11,26 @@ const AdminPanel = ({ user }) => {
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [customerAssets, setCustomerAssets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('orders');
+  const [activeTab, setActiveTab] = useState('create-orders');
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
+  // Order creation state
+  const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
+  const [orderFormData, setOrderFormData] = useState({
+    userId: '',
+    assetName: 'AAPL',
+    side: 'BUY',
+    size: '',
+    price: ''
+  });
+  const [submittingOrder, setSubmittingOrder] = useState(false);
+  const [availableCustomers, setAvailableCustomers] = useState([]);
+  const [availableAssets, setAvailableAssets] = useState([]);
+
   useEffect(() => {
     fetchAdminData();
+    fetchAvailableAssets();
   }, []);
 
   const fetchAdminData = async () => {
@@ -30,13 +44,27 @@ const AdminPanel = ({ user }) => {
       setAllOrders(ordersData);
       setPendingOrders(pendingData);
 
-      // Extract unique customers from orders
+      // Extract unique customers from orders - this gives us real customer data
       const uniqueCustomers = [...new Set(ordersData.map(order => order.userId))];
       setCustomers(uniqueCustomers);
+
+      // Set available customers for order creation from real data
+      setAvailableCustomers(uniqueCustomers);
     } catch (error) {
       toast.error('Failed to load admin data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAvailableAssets = async () => {
+    try {
+      const assets = await ApiService.getAvailableAssets();
+      setAvailableAssets(assets);
+    } catch (error) {
+      console.error('Failed to fetch available assets:', error);
+      // Fallback to default assets
+      setAvailableAssets(['AAPL', 'GOOGL', 'MSFT', 'NVDA', 'TSLA']);
     }
   };
 
@@ -55,6 +83,37 @@ const AdminPanel = ({ user }) => {
       fetchCustomerAssets(customerId);
     } else {
       setCustomerAssets([]);
+    }
+  };
+
+  const handleCreateOrder = async (e) => {
+    e.preventDefault();
+    setSubmittingOrder(true);
+
+    try {
+      const orderData = {
+        userId: parseInt(orderFormData.userId),
+        assetName: orderFormData.assetName,
+        side: orderFormData.side,
+        size: parseFloat(orderFormData.size),
+        price: parseFloat(orderFormData.price)
+      };
+
+      await ApiService.createOrder(orderData);
+      toast.success(`Order created successfully for Customer ${orderFormData.userId}!`);
+      setShowCreateOrderModal(false);
+      setOrderFormData({
+        userId: '',
+        assetName: availableAssets[0] || 'AAPL',
+        side: 'BUY',
+        size: '',
+        price: ''
+      });
+      fetchAdminData(); // Refresh data
+    } catch (error) {
+      toast.error(error.response?.data || 'Failed to create order');
+    } finally {
+      setSubmittingOrder(false);
     }
   };
 
@@ -146,6 +205,28 @@ const AdminPanel = ({ user }) => {
 
       {/* Admin Tabs */}
       <Tabs activeKey={activeTab} onSelect={(k) => setActiveTab(k)} className="mb-3">
+        <Tab eventKey="create-orders" title="Create Orders">
+          <Card>
+            <Card.Header>
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">Create New Order for Customer</h5>
+                <Button
+                  variant="primary"
+                  onClick={() => setShowCreateOrderModal(true)}
+                >
+                  New Order
+                </Button>
+              </div>
+            </Card.Header>
+            <Card.Body>
+              <Alert variant="info">
+                <strong>Admin Order Creation:</strong> As an administrator, you can create orders for any customer.
+                Make sure to verify customer balance before creating orders.
+              </Alert>
+            </Card.Body>
+          </Card>
+        </Tab>
+
         <Tab eventKey="orders" title="All Orders">
           <Card>
             <Card.Header>
@@ -360,6 +441,124 @@ const AdminPanel = ({ user }) => {
           </Card>
         </Tab>
       </Tabs>
+
+      {/* Create Order Modal */}
+      <Modal show={showCreateOrderModal} onHide={() => setShowCreateOrderModal(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Create New Order for Customer</Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={handleCreateOrder}>
+          <Modal.Body>
+            <Row>
+              <Col md={6}>
+                <Form.Group controlId="formUserId" className="mb-3">
+                  <Form.Label>Customer ID</Form.Label>
+                  <Form.Select
+                    value={orderFormData.userId}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, userId: e.target.value })}
+                    required
+                  >
+                    <option value="">Select Customer</option>
+                    {availableCustomers.map(customerId => (
+                      <option key={customerId} value={customerId}>
+                        Customer {customerId}
+                      </option>
+                    ))}
+                  </Form.Select>
+                  <Form.Text className="text-muted">
+                    Select the customer for whom you want to create this order
+                  </Form.Text>
+                </Form.Group>
+
+                <Form.Group controlId="formAssetName" className="mb-3">
+                  <Form.Label>Asset</Form.Label>
+                  <Form.Select
+                    value={orderFormData.assetName}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, assetName: e.target.value })}
+                    required
+                  >
+                    {availableAssets.map(asset => (
+                      <option key={asset} value={asset}>
+                        {asset}
+                      </option>
+                    ))}
+                  </Form.Select>
+                  <Form.Text className="text-muted">
+                    Choose the asset to trade
+                  </Form.Text>
+                </Form.Group>
+
+                <Form.Group controlId="formOrderSide" className="mb-3">
+                  <Form.Label>Order Side</Form.Label>
+                  <Form.Select
+                    value={orderFormData.side}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, side: e.target.value })}
+                    required
+                  >
+                    <option value="BUY">BUY</option>
+                    <option value="SELL">SELL</option>
+                  </Form.Select>
+                  <Form.Text className="text-muted">
+                    Select whether this is a buy or sell order
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group controlId="formSize" className="mb-3">
+                  <Form.Label>Size</Form.Label>
+                  <Form.Control
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={orderFormData.size}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, size: e.target.value })}
+                    placeholder="Enter quantity"
+                    required
+                  />
+                  <Form.Text className="text-muted">
+                    Enter the quantity of assets to trade
+                  </Form.Text>
+                </Form.Group>
+
+                <Form.Group controlId="formPrice" className="mb-3">
+                  <Form.Label>Price (₺)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={orderFormData.price}
+                    onChange={(e) => setOrderFormData({ ...orderFormData, price: e.target.value })}
+                    placeholder="Enter price per unit"
+                    required
+                  />
+                  <Form.Text className="text-muted">
+                    Enter the price per unit in Turkish Lira
+                  </Form.Text>
+                </Form.Group>
+
+                {orderFormData.size && orderFormData.price && (
+                  <Alert variant="info">
+                    <strong>Total Order Value:</strong> ₺{(parseFloat(orderFormData.size || 0) * parseFloat(orderFormData.price || 0)).toLocaleString()}
+                  </Alert>
+                )}
+              </Col>
+            </Row>
+
+            <Alert variant="warning">
+              <strong>Admin Reminder:</strong> Please verify that the customer has sufficient balance before creating the order.
+              You can check customer assets in the "Customer Assets" tab.
+            </Alert>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowCreateOrderModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" disabled={submittingOrder}>
+              {submittingOrder ? 'Creating Order...' : 'Create Order'}
+            </Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
 
       {/* Match Order Modal */}
       <Modal show={showMatchModal} onHide={() => setShowMatchModal(false)}>
