@@ -106,10 +106,18 @@ const Orders = ({ user }) => {
         <Col>
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h2>Orders</h2>
-            <Button variant="primary" onClick={() => setShowCreateModal(true)}>
-              Create New Order
-            </Button>
+            {user.isAdmin && (
+              <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+                Create New Order
+              </Button>
+            )}
           </div>
+          {!user.isAdmin && (
+            <Alert variant="info" className="mb-3">
+              <strong>Note:</strong> Only administrators can create new orders.
+              Contact your administrator if you need to place an order.
+            </Alert>
+          )}
         </Col>
       </Row>
 
@@ -121,12 +129,18 @@ const Orders = ({ user }) => {
             </Card.Header>
             <Card.Body>
               {orders.length === 0 ? (
-                <Alert variant="info">No orders found. Create your first order!</Alert>
+                <Alert variant="info">
+                  {user.isAdmin
+                    ? "No orders found. Create your first order!"
+                    : "No orders found for your account."
+                  }
+                </Alert>
               ) : (
                 <Table responsive hover>
                   <thead>
                     <tr>
                       <th>ID</th>
+                      {user.isAdmin && <th>Customer ID</th>}
                       <th>Asset</th>
                       <th>Side</th>
                       <th>Size</th>
@@ -140,6 +154,7 @@ const Orders = ({ user }) => {
                     {orders.map((order) => (
                       <tr key={order.id}>
                         <td>#{order.id}</td>
+                        {user.isAdmin && <td>{order.userId}</td>}
                         <td><strong>{order.assetName}</strong></td>
                         <td>
                           <Badge bg={getSideBadgeClass(order.orderSide)}>
@@ -177,101 +192,97 @@ const Orders = ({ user }) => {
         </Col>
       </Row>
 
-      {/* Create Order Modal */}
-      <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Create New Order</Modal.Title>
-        </Modal.Header>
-        <Form onSubmit={handleCreateOrder}>
-          <Modal.Body>
-            {user.isAdmin && (
+      {/* Create Order Modal - Only show for admins */}
+      {user.isAdmin && (
+        <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)}>
+          <Modal.Header closeButton>
+            <Modal.Title>Create New Order</Modal.Title>
+          </Modal.Header>
+          <Form onSubmit={handleCreateOrder}>
+            <Modal.Body>
               <Form.Group className="mb-3">
                 <Form.Label>User ID</Form.Label>
                 <Form.Control
                   type="number"
                   value={formData.userId}
                   onChange={(e) => setFormData({...formData, userId: e.target.value})}
+                  placeholder="Enter customer user ID"
+                  required
+                />
+                <Form.Text className="text-muted">
+                  Enter the customer ID for whom you want to create this order
+                </Form.Text>
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Label>Asset</Form.Label>
+                <Form.Select
+                  value={formData.assetName}
+                  onChange={(e) => setFormData({...formData, assetName: e.target.value})}
+                  required
+                >
+                  <option value="AAPL">AAPL</option>
+                  <option value="GOOGL">GOOGL</option>
+                  <option value="MSFT">MSFT</option>
+                  <option value="NVDA">NVDA</option>
+                  <option value="TSLA">TSLA</option>
+                </Form.Select>
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Label>Order Side</Form.Label>
+                <Form.Select
+                  value={formData.side}
+                  onChange={(e) => setFormData({...formData, side: e.target.value})}
+                  required
+                >
+                  <option value="BUY">BUY</option>
+                  <option value="SELL">SELL</option>
+                </Form.Select>
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Label>Size</Form.Label>
+                <Form.Control
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={formData.size}
+                  onChange={(e) => setFormData({...formData, size: e.target.value})}
+                  placeholder="Enter quantity"
                   required
                 />
               </Form.Group>
-            )}
 
-            <Form.Group className="mb-3">
-              <Form.Label>Asset</Form.Label>
-              <Form.Select
-                value={formData.assetName}
-                onChange={(e) => setFormData({...formData, assetName: e.target.value})}
-                required
-              >
-                <option value="AAPL">AAPL</option>
-                <option value="GOOGL">GOOGL</option>
-                <option value="MSFT">MSFT</option>
-                <option value="NVDA">NVDA</option>
-                <option value="TSLA">TSLA</option>
-              </Form.Select>
-            </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Price (₺)</Form.Label>
+                <Form.Control
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={formData.price}
+                  onChange={(e) => setFormData({...formData, price: e.target.value})}
+                  placeholder="Enter price per unit"
+                  required
+                />
+              </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Order Side</Form.Label>
-              <Form.Select
-                value={formData.side}
-                onChange={(e) => setFormData({...formData, side: e.target.value})}
-                required
-              >
-                <option value="BUY">BUY</option>
-                <option value="SELL">SELL</option>
-              </Form.Select>
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Size</Form.Label>
-              <Form.Control
-                type="number"
-                step="0.01"
-                min="0.01"
-                value={formData.size}
-                onChange={(e) => setFormData({...formData, size: e.target.value})}
-                placeholder="Enter quantity"
-                required
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Price (₺)</Form.Label>
-              <Form.Control
-                type="number"
-                step="0.01"
-                min="0.01"
-                value={formData.price}
-                onChange={(e) => setFormData({...formData, price: e.target.value})}
-                placeholder="Enter price per unit"
-                required
-              />
-            </Form.Group>
-
-            {/* Show available balance */}
-            {formData.side === 'BUY' && (
-              <Alert variant="info">
-                Available TRY: ₺{(assets.find(a => a.assetName === 'TRY')?.usableSize || 0).toLocaleString()}
+              <Alert variant="warning">
+                <strong>Admin Note:</strong> Make sure the customer has sufficient balance before creating the order.
+                Check customer assets in the Admin Panel if needed.
               </Alert>
-            )}
-
-            {formData.side === 'SELL' && (
-              <Alert variant="info">
-                Available {formData.assetName}: {(assets.find(a => a.assetName === formData.assetName)?.usableSize || 0).toLocaleString()}
-              </Alert>
-            )}
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit" disabled={submitting}>
-              {submitting ? 'Creating...' : 'Create Order'}
-            </Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" type="submit" disabled={submitting}>
+                {submitting ? 'Creating...' : 'Create Order'}
+              </Button>
+            </Modal.Footer>
+          </Form>
+        </Modal>
+      )}
     </Container>
   );
 };
