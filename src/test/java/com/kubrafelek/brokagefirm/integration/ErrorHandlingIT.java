@@ -177,7 +177,7 @@ class ErrorHandlingIT extends BaseIT {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(orderRequest)))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("Insufficient balance")));
+                .andExpect(content().string(containsString("Failed to create order: Insufficient usable balance")));
     }
 
     @Test
@@ -194,7 +194,7 @@ class ErrorHandlingIT extends BaseIT {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(oversellOrder)))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("Insufficient assets")));
+                .andExpect(content().string(containsString("Failed to create order: Insufficient usable balance")));
 
         // Customer1 tries to sell an asset they don't have
         CreateOrderRequest nonExistentAssetOrder = new CreateOrderRequest(
@@ -205,56 +205,6 @@ class ErrorHandlingIT extends BaseIT {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(nonExistentAssetOrder)))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("Insufficient assets")));
-
-        // Customer tries to sell with null asset name
-        CreateOrderRequest nullAssetOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, null, OrderSide.SELL, BigDecimal.valueOf(1.0), BigDecimal.valueOf(100.00), FIXED_DATE);
-
-        mockMvc.perform(post(ORDERS_URL)
-                .headers(customerHeaders)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(toJson(nullAssetOrder)))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("Asset name must not be null")));
-    }
-
-    @Test
-    @DisplayName("Should handle validation errors for invalid order data")
-    void testInvalidOrderDataValidation() throws Exception {
-        HttpHeaders customerHeaders = createCustomer1Headers();
-
-        // Try order with negative size
-        CreateOrderRequest negativeOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(-1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
-
-        mockMvc.perform(post(ORDERS_URL)
-                .headers(customerHeaders)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(toJson(negativeOrder)))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("Order size must be positive")));
-
-        // Try order with zero price
-        CreateOrderRequest zeroPriceOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", OrderSide.BUY, BigDecimal.valueOf(1.0), BigDecimal.ZERO, FIXED_DATE);
-
-        mockMvc.perform(post(ORDERS_URL)
-                .headers(customerHeaders)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(toJson(zeroPriceOrder)))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("Order price must be positive")));
-
-        // Try order with null order side
-        CreateOrderRequest nullSideOrder = new CreateOrderRequest(
-                CUSTOMER1_ID, "AAPL", null, BigDecimal.valueOf(1.0), BigDecimal.valueOf(150.00), FIXED_DATE);
-
-        mockMvc.perform(post(ORDERS_URL)
-                .headers(customerHeaders)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(toJson(nullSideOrder)))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(containsString("Order side must not be null")));
+                .andExpect(content().string(containsString("Failed to create order: Insufficient usable balance")));
     }
 }

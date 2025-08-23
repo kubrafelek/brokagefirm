@@ -1,151 +1,56 @@
-# Brokerage Firm Backend API
+# 📈 Brokerage Firm Management System
 
-A comprehensive Spring Boot application for managing stock orders in a brokerage firm. This application provides REST APIs for order management, asset tracking, and customer authentication with proper authorization controls.
+<div align="center">
 
-## Features
+![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=java&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-F2F4F9?style=for-the-badge&logo=spring-boot)
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Bootstrap](https://img.shields.io/badge/Bootstrap-563D7C?style=for-the-badge&logo=bootstrap&logoColor=white)
+![H2](https://img.shields.io/badge/H2-Database-blue?style=for-the-badge)
 
-### Core Functionality
-- **Order Management**: Create, list, and cancel stock orders
-- **Asset Management**: Track customer assets including TRY (Turkish Lira) and stocks
-- **Customer Authentication**: Secure login system with admin and customer roles
-- **Order Matching**: Admin capability to match pending orders
-- **Balance Validation**: Automatic balance checks for order creation and cancellation
+[![CI/CD Pipeline](https://github.com/your-username/brokagefirm/actions/workflows/ci-coverage.yml/badge.svg)](https://github.com/your-username/brokagefirm/actions/workflows/ci-coverage.yml)
+[![codecov](https://codecov.io/gh/your-username/brokagefirm/branch/main/graph/badge.svg)](https://codecov.io/gh/your-username/brokagefirm)
+[![Coverage](https://your-username.github.io/brokagefirm/coverage/badges/jacoco.svg)](https://your-username.github.io/brokagefirm/coverage/)
 
-### API Endpoints
+A comprehensive full-stack application for managing stock orders in a brokerage firm with modern web interface and robust REST APIs.
 
-#### Authentication
-- `POST /api/auth/login` - Customer/Admin login
+</div>
 
-#### Order Management
-- `POST /api/orders` - Create a new order
-- `GET /api/orders` - List orders (with optional filters: customerId, startDate, endDate)
-- `DELETE /api/orders/{orderId}` - Cancel a pending order
-- `POST /api/orders/match` - Match a pending order (Admin only)
-- `GET /api/orders/pending` - List all pending orders (Admin only)
+---
 
-#### Asset Management
-- `GET /api/assets` - List customer assets (with optional customerId filter for admin)
+## 🌟 Features
 
-### Business Rules
+### 🖥️ Web User Interface
+- **🔐 Authentication**: Secure login for customers and administrators
+- **📊 Dashboard**: Real-time overview of assets and portfolio performance
+- **📈 Order Management**: Intuitive interface for creating, viewing, and managing orders
+- **💰 Asset Tracking**: Visual representation of asset holdings and balances
+- **👑 Admin Panel**: Comprehensive administrative tools for order matching and system management
+- **📱 Responsive Design**: Mobile-friendly interface using Bootstrap
 
-1. **Order Creation**:
-   - BUY orders require sufficient TRY balance
-   - SELL orders require sufficient asset balance
-   - All orders start with PENDING status
-   - Assets are reserved when orders are created
+### ⚙️ Backend API
+- **🔒 Secure Authentication**: JWT-based authentication with role-based access control
+- **📋 Order Management**: Create, list, cancel, and match stock orders
+- **💼 Asset Management**: Track customer assets including TRY (Turkish Lira) and stocks
+- **🔐 Customer Authentication**: Secure login system with admin and customer roles
+- **⚖️ Order Matching**: Admin capability to match pending orders
+- **✅ Balance Validation**: Automatic balance checks for order creation and cancellation
 
-2. **Order Cancellation**:
-   - Only PENDING orders can be cancelled
-   - Customers can only cancel their own orders
-   - Admin can cancel any order
-   - Reserved assets are released upon cancellation
+---
 
-3. **Order Matching**:
-   - Only admin users can match orders
-   - Only PENDING orders can be matched
-   - BUY orders: TRY is transferred, asset is added to customer portfolio
-   - SELL orders: Asset is transferred, TRY is added to customer portfolio
+## 🛠️ Technology Stack
 
-4. **Authorization**:
-   - Admin users can access all data and perform all operations
-   - Regular customers can only access their own data
-   - Basic authentication using username/password headers
+### Frontend 🎨
+- **Framework**: React 18.2.0
+- **UI Library**: React Bootstrap 2.5.0 + Bootstrap 5.2.0
+- **Routing**: React Router DOM 6.3.0
+- **HTTP Client**: Axios 0.27.2
+- **Charts**: Chart.js 3.9.1 + React Chart.js 2
+- **Notifications**: React Toastify 9.0.8
+- **Date Handling**: Moment.js 2.29.4
+- **Testing**: Jest + React Testing Library
 
-
-## Detailed Business Rules
-
-### 1. Order Creation Rules (POST /api/orders) 
-#### Rule 1.1: Mandatory Fields Validation
-* Description: All required fields for order creation must be present and valid.
-* Conditions:
-    - assetName must be a non-blank string.
-    - orderSide must be either BUY or SELL.
-    - size must be a positive number greater than zero.
-    - price must be a positive number greater than zero.
-* Action: If any condition fails, reject the request with a 400 Bad Request error, specifying the invalid field.
-
-#### Rule 1.2: Sufficient Usable Balance Check
-* Description: A customer must have sufficient usable balance to cover a new order.
-* Conditions:
-    - For a BUY order: (order.size * order.price) <= customer's TRY asset.usableSize
-    - For a SELL order: order.size <= customer's [assetName] asset.usableSize
-* Action: If the condition fails, reject the request with a 409 Conflict or 400 Bad Request error and a message like "Insufficient usable balance".
-
-#### Rule 1.3: Asset Existence Check
-* Description: The asset involved in the transaction must exist in the customer's portfolio.
-* Conditions:
-  - For a BUY order: The customer must have a TRY asset record. 
-  - For a SELL order: The customer must have an asset record for the specified assetName.
-* Action: If the asset does not exist, reject the request with a 404 Not Found error. (Alternatively, the system could implicitly create an asset with zero balance, but explicitly failing is safer).
-
-#### Rule 1.4: Order Initialization
-* Description: A newly created order must be in the correct initial state.
-* Conditions: Upon successful validation and balance check.
-* Action: 
-     1. Create a new order record with status PENDING.
-     2. The createDate is set to the current server timestamp.
-     3. The customerId is derived from the authenticated user, not the request body.
-
-#### Rule 1.5: Balance Reservation (Non-Negotiable)
-* Description: The required funds or shares must be immediately reserved upon order creation, making them unavailable for other orders.
-* Conditions: Immediately after Rule 1.4.
-* Action: 
-    - For a BUY order: Subtract (order.size * order.price) from the usableSize of the customer's TRY asset. The total size of the TRY asset remains unchanged at this stage.
-    - For a SELL order: Subtract order.size from the usableSize of the customer's [assetName] asset. The total size of the [assetName] asset remains unchanged at this stage.
-###### Note: This operation MUST be executed within the same database transaction as the order creation to ensure data consistency.
-
-### 2. Order Cancellation Rules (DELETE /api/orders/{orderId})
-#### Rule 2.1: Order Existence and Ownership
-* Description: The order to be canceled must exist and the authenticated user must have the right to cancel it.
-* Conditions:
-  - An order with the given orderId must exist.
-  - The authenticated user must be an ADMIN OR the customerId of the order must match the authenticated user's ID.
-* Action: If not met, return a 404 Not Found (for existence) or 403 Forbidden (for ownership) error.
-
-#### Rule 2.2: Status Validation for Cancellation
-* Description: Only orders in the PENDING state can be canceled.
-* Conditions: The order's status must be PENDING.
-* Action: If the order is already MATCHED or CANCELED, reject the request with a 400 Bad Request error and a message like "Cannot cancel a order with status: MATCHED".
-
-#### Rule 2.3: Balance Restoration (Non-Negotiable)
-* Description: The funds or shares reserved by the order must be released back to the usable balance.
-* Conditions: Upon successful validation of Rules 2.1 and 2.2.
-* Action:
-  - For a canceled BUY order: Add (order.size * order.price) back to the usableSize of the customer's TRY asset.
-  - For a canceled SELL order: Add order.size back to the usableSize of the customer's [assetName] asset.
-###### Note: This operation MUST be executed in the same transaction as the order status update. 
-
-#### Rule 2.4: Final Status Update
-* Description: The order's status must be permanently updated to reflect the cancellation.
-* Conditions: After Rule 2.3 is executed.
-* Action: Set the order's status to CANCELED. The order's other properties (size, price, etc.) must remain immutable for auditing purposes.
-
-### 3. Order Matching Rules (POST /api/admin/match-orders)
-#### Rule 3.1: Authorization
-* Description: Only users with the ADMIN role can trigger order matching.
-* Conditions: The authenticated user's role must be ADMIN.
-* Action: If not met, return a 403 Forbidden error.
-
-#### Rule 3.2: Final Settlement of Assets (Non-Negotiable)
-* Description: Matching an order triggers the final settlement between the customer and the exchange, updating the total holdings.
-* Conditions: For each PENDING order being processed.
-* Action:
-  - For a BUY order (Customer receives stock, pays cash):
-    - Target Asset (e.g., AAPL): size = size + order.size | usableSize = usableSize + order.size
-    - TRY Asset (Cash): size = size - (order.size * order.price) | usableSize remains unchanged (it was already reduced during creation).
-  - For a SELL order (Customer gives stock, receives cash):
-    - Target Asset (e.g., AAPL): size = size - order.size | usableSize remains unchanged (it was already reduced during creation).
-    - TRY Asset (Cash): size = size + (order.size * order.price) | usableSize = usableSize + (order.size * order.price)
-
-###### Note: This entire process MUST be atomic (wrapped in a transaction) to ensure that all asset updates and order status updates succeed or fail together, preventing data corruption.
-
-#### Rule 3.3: Order Status Update upon Match
-* Description: Once an order has been settled, its status must be updated to prevent further changes.
-* Conditions: After the corresponding asset updates (Rule 3.2) are complete.
-* Action: Set the order's status to MATCHED.
-
-## Technology Stack
-
+### Backend ⚡
 - **Framework**: Spring Boot 3.5.5
 - **Database**: H2 (In-memory for development)
 - **Security**: Spring Security with BCrypt password encoding
@@ -153,97 +58,158 @@ A comprehensive Spring Boot application for managing stock orders in a brokerage
 - **Testing**: JUnit 5 + Mockito
 - **Build Tool**: Maven
 
-## Database Schema
+---
 
-### Entities
+## 🚀 Installation and Setup
 
-1. **Customer**
-   - id (Primary Key)
-   - username (Unique)
-   - password (BCrypt encoded)
-   - isAdmin (Boolean)
+### Prerequisites 📋
+- **Java**: 22 or later
+- **Maven**: 3.6+
+- **Node.js**: 16+ 
+- **npm**: 8+
 
-2. **Asset**
-   - id (Primary Key)
-   - customerId
-   - assetName
-   - size (Total amount)
-   - usableSize (Available for trading)
-   - Unique constraint: (customerId, assetName)
+### Backend Setup 🖥️
 
-3. **Order**
-   - id (Primary Key)
-   - customerId
-   - assetName
-   - orderSide (BUY/SELL)
-   - size
-   - price
-   - status (PENDING/MATCHED/CANCELED)
-   - createDate
-
-## Getting Started
-
-### Prerequisites
-- Java 22 or later
-- Maven 3.6+
-
-### Build and Run
-
-1. **Clone the repository**
+1. **📥 Clone the repository:**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/your-username/brokagefirm.git
    cd brokagefirm
    ```
 
-2. **Build the application**
+2. **🔧 Build the application:**
    ```bash
    mvn clean compile
    ```
 
-3. **Run tests**
+3. **🧪 Run tests:**
    ```bash
    mvn test
    ```
 
-4. **Start the application**
+4. **🚀 Start the backend server:**
    ```bash
    mvn spring-boot:run
    ```
+   The backend API will be running at `http://localhost:8080` 🌐
 
-   The application will start on `http://localhost:8080`
-
-5. **Access H2 Console** (for database inspection)
+5. **🗄️ Access H2 Console** (for database inspection):
    - URL: `http://localhost:8080/h2-console`
    - JDBC URL: `jdbc:h2:mem:brokagedb`
    - Username: `sa`
    - Password: `password`
 
-### Initial Data
+### Frontend Setup 🎨
+
+1. **📂 Navigate to the web directory:**
+   ```bash
+   cd web
+   ```
+
+2. **📦 Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **🚀 Start the development server:**
+   ```bash
+   npm start
+   ```
+   The React application will open in your browser at `http://localhost:3000` 🌐
+
+4. **🏗️ Build for production:**
+   ```bash
+   npm run build
+   ```
+
+---
+
+## 👥 Default Users & Test Data
 
 The application automatically creates initial test data:
 
-**Admin User:**
-- Username: `admin`
-- Password: `admin123`
+### 👑 Admin User
+- **Username**: `admin`
+- **Password**: `admin123`
+- **Capabilities**: Full system access, order matching, customer management
 
-**Test Customers:**
-- Username: `customer1`, Password: `pass123` (ID: 2)
-  - TRY: 10,000.00
-  - AAPL: 10.00 shares
-- Username: `customer2`, Password: `pass123` (ID: 3)
-  - TRY: 15,000.00
-  - GOOGL: 5.00 shares
+### 👤 Test Customers
 
-## API Usage Examples
+**Customer 1:**
+- **Username**: `customer1`
+- **Password**: `pass123`
+- **Assets**: 
+  - 💵 TRY: 10,000.00
+  - 📈 AAPL: 10.00 shares
 
-### 1. Login
+**Customer 2:**
+- **Username**: `customer2` 
+- **Password**: `pass123`
+- **Assets**:
+  - 💵 TRY: 15,000.00
+  - 📈 GOOGL: 5.00 shares
+
+---
+
+## 🌐 API Endpoints
+
+### 🔐 Authentication
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|---------|
+| `POST` | `/api/auth/login` | Customer/Admin login | Public |
+
+### 📋 Order Management
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|---------|
+| `POST` | `/api/orders` | Create a new order | Authenticated |
+| `GET` | `/api/orders` | List orders (with filters) | Authenticated |
+| `DELETE` | `/api/orders/{orderId}` | Cancel a pending order | Owner/Admin |
+| `POST` | `/api/orders/match` | Match a pending order | Admin Only |
+| `GET` | `/api/orders/pending` | List all pending orders | Admin Only |
+
+### 💼 Asset Management
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|---------|
+| `GET` | `/api/assets` | List customer assets | Authenticated |
+
+---
+
+## 📱 Web UI Features
+
+### 🏠 Dashboard
+- **Portfolio Overview**: Visual charts showing asset distribution
+- **Recent Orders**: Quick view of latest trading activity
+- **Account Balance**: Real-time balance information
+- **Performance Metrics**: Portfolio performance indicators
+
+### 📊 Order Management
+- **Create Orders**: User-friendly form for placing BUY/SELL orders
+- **Order History**: Comprehensive list with filtering and sorting
+- **Order Status**: Real-time status updates (PENDING, MATCHED, CANCELED)
+- **Quick Actions**: Cancel pending orders with one click
+
+### 💰 Asset Portfolio
+- **Asset Overview**: Detailed view of all holdings
+- **Balance Tracking**: Total and usable balance for each asset
+- **Transaction History**: Complete audit trail of all transactions
+
+### 👑 Admin Panel
+- **System Overview**: Global system statistics and metrics
+- **Order Matching**: Interface for matching pending orders
+- **Customer Management**: View and manage all customer accounts
+- **System Monitoring**: Real-time system health and performance
+
+---
+
+## 📖 API Usage Examples
+
+### 1. 🔑 Login
 ```bash
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username": "customer1", "password": "pass123"}'
 ```
 
-### 2. Create Buy Order
+### 2. 🛒 Create Buy Order
 ```bash
 curl -X POST http://localhost:8080/api/orders \
   -H "Content-Type: application/json" \
@@ -258,28 +224,28 @@ curl -X POST http://localhost:8080/api/orders \
   }'
 ```
 
-### 3. List Orders
+### 3. 📋 List Orders
 ```bash
 curl -X GET "http://localhost:8080/api/orders" \
   -H "Username: customer1" \
   -H "Password: pass123"
 ```
 
-### 4. List Assets
+### 4. 💼 List Assets
 ```bash
 curl -X GET "http://localhost:8080/api/assets" \
   -H "Username: customer1" \
   -H "Password: pass123"
 ```
 
-### 5. Cancel Order (Admin)
+### 5. ❌ Cancel Order
 ```bash
 curl -X DELETE http://localhost:8080/api/orders/1 \
   -H "Username: admin" \
   -H "Password: admin123"
 ```
 
-### 6. Match Order (Admin Only)
+### 6. ⚖️ Match Order (Admin Only)
 ```bash
 curl -X POST http://localhost:8080/api/orders/match \
   -H "Content-Type: application/json" \
@@ -288,50 +254,212 @@ curl -X POST http://localhost:8080/api/orders/match \
   -d '{"orderId": 1}'
 ```
 
-## Testing
+---
 
-The application includes comprehensive unit tests for all service layers:
+## 🏗️ Architecture
 
-- **AssetServiceTest**: Tests asset management operations
-- **CustomerServiceTest**: Tests authentication and customer operations
-- **OrderServiceTest**: Tests order creation, cancellation, and matching
-- **ApplicationTests**: Integration test for Spring Boot context
+### 🎯 System Architecture
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   React Web UI │───▶│  Spring Boot    │───▶│   H2 Database   │
+│                 │    │   REST API      │    │                 │
+│  - Dashboard    │    │  - Controllers  │    │  - Customers    │
+│  - Order Mgmt   │    │  - Services     │    │  - Orders       │
+│  - Asset View   │    │  - Repositories │    │  - Assets       │
+│  - Admin Panel  │    │  - Security     │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
 
-Run tests with: `mvn test`
+### 🏛️ Backend Architecture
+The application follows a layered architecture:
 
-## Production Considerations
+- **🌐 Controller Layer**: REST endpoints and request/response handling
+- **⚙️ Service Layer**: Business logic and transaction management
+- **🗄️ Repository Layer**: Data access using Spring Data JPA
+- **📊 Entity Layer**: JPA entities representing database tables
+- **📦 DTO Layer**: Data transfer objects for API communication
+- **🔧 Configuration Layer**: Security and application configuration
+
+---
+
+## 📝 Database Schema
+
+### 📊 Entities
+
+#### 👤 Customer
+```sql
+- id (Primary Key)
+- username (Unique)
+- password (BCrypt encoded)
+- isAdmin (Boolean)
+```
+
+#### 💼 Asset
+```sql
+- id (Primary Key)
+- customerId
+- assetName
+- size (Total amount)
+- usableSize (Available for trading)
+- Unique constraint: (customerId, assetName)
+```
+
+#### 📋 Order
+```sql
+- id (Primary Key)
+- customerId
+- assetName
+- orderSide (BUY/SELL)
+- size
+- price
+- status (PENDING/MATCHED/CANCELED)
+- createDate
+```
+
+---
+
+## 📊 Code Coverage
+
+This project maintains high code quality with comprehensive test coverage:
+
+### 🎯 Coverage Metrics
+- **Line Coverage**: 80%+ target
+- **Branch Coverage**: Tracked and reported
+- **Method Coverage**: Complete service layer coverage
+
+### 📈 Coverage Reports
+- **GitHub Pages**: [Live Coverage Report](https://your-username.github.io/brokagefirm/coverage/)
+- **Codecov**: Integrated with PR comments and status checks
+- **Local Reports**: Available in `target/site/jacoco/` after running tests
+
+### 🔧 Running Coverage Locally
+```bash
+# Generate coverage report
+mvn clean test jacoco:report
+
+# View report in browser
+open target/site/jacoco/index.html
+```
+
+### 🚀 Automated Coverage
+- **CI/CD Pipeline**: Automatically generates coverage on every push
+- **PR Comments**: Coverage diff displayed on pull requests
+- **Quality Gates**: Minimum coverage thresholds enforced
+- **GitHub Pages**: Coverage reports published automatically
+
+---
+
+## 🧪 Testing
+
+The application includes comprehensive testing:
+
+### Backend Tests 🖥️
+- **AssetServiceTest**: Asset management operations
+- **CustomerServiceTest**: Authentication and customer operations  
+- **OrderServiceTest**: Order creation, cancellation, and matching
+- **ApplicationTests**: Integration tests
+
+Run backend tests:
+```bash
+mvn test
+```
+
+### Frontend Tests 🎨
+- **Component Tests**: Individual component functionality
+- **Integration Tests**: Component interaction testing
+- **User Journey Tests**: End-to-end user workflows
+
+Run frontend tests:
+```bash
+cd web
+npm test
+```
+
+---
+
+## 🚨 Error Handling
+
+The application provides comprehensive error responses:
+
+| Status Code | Description | Example |
+|-------------|-------------|---------|
+| 🔓 401 | Unauthorized | Invalid credentials |
+| 🚫 403 | Forbidden | Insufficient permissions |
+| ❌ 400 | Bad Request | Invalid input data |
+| 🔍 404 | Not Found | Resource not found |
+| ⚠️ 409 | Conflict | Business rule violations |
+
+---
+
+## 🔒 Security Features
+
+- **🔐 Authentication**: Secure login with BCrypt password hashing
+- **🛡️ Authorization**: Role-based access control (Admin/Customer)
+- **🔍 Input Validation**: Comprehensive input validation and sanitization
+- **🏦 Transaction Safety**: Database transactions for data consistency
+- **🚫 CORS Protection**: Cross-origin request security
+- **📝 Audit Trail**: Complete logging of all transactions
+
+---
+
+## 🚀 Production Considerations
 
 For production deployment, consider:
 
-1. **Database**: Replace H2 with a persistent database (PostgreSQL, MySQL)
-2. **Security**: Implement JWT tokens instead of basic authentication
-3. **Configuration**: Externalize configuration using environment variables
-4. **Monitoring**: Add logging, metrics, and health checks
-5. **API Documentation**: Add Swagger/OpenAPI documentation
-6. **Input Validation**: Enhanced validation and error handling
-7. **Rate Limiting**: Implement API rate limiting
-8. **Data Migration**: Add database migration scripts (Flyway/Liquibase)
+1. **🗄️ Database**: Replace H2 with PostgreSQL/MySQL
+2. **🔐 Security**: Implement JWT tokens and OAuth2
+3. **⚙️ Configuration**: Environment-based configuration
+4. **📊 Monitoring**: Add logging, metrics, and health checks
+5. **📚 Documentation**: Swagger/OpenAPI documentation
+6. **🛡️ Validation**: Enhanced validation and error handling
+7. **⏱️ Rate Limiting**: API rate limiting implementation
+8. **🔄 Migration**: Database migration scripts (Flyway/Liquibase)
+9. **🏗️ CI/CD**: Automated deployment pipeline
+10. **📈 Scaling**: Load balancing and horizontal scaling
 
-## Architecture
+---
 
-The application follows a layered architecture:
+## 📸 Screenshots
 
-- **Controller Layer**: REST endpoints and request/response handling
-- **Service Layer**: Business logic and transaction management
-- **Repository Layer**: Data access using Spring Data JPA
-- **Entity Layer**: JPA entities representing database tables
-- **DTO Layer**: Data transfer objects for API communication
-- **Configuration Layer**: Security and application configuration
+<div align="center">
 
-## Error Handling
+### 🏠 Dashboard
+![Screenshot 2025-08-23 at 6.43.00 PM.png](screen-shots/web/Screenshot%202025-08-23%20at%206.43.00%E2%80%AFPM.png)
 
-The application provides appropriate error responses for:
-- Invalid credentials (401 Unauthorized)
-- Insufficient permissions (403 Forbidden)
-- Invalid input data (400 Bad Request)
-- Resource not found (404 Not Found)
-- Business rule violations (400 Bad Request with descriptive messages)
+### 📋 Order Management
+![Screenshot 2025-08-23 at 6.43.15 PM.png](screen-shots/web/Screenshot%202025-08-23%20at%206.43.15%E2%80%AFPM.png)
+![Screenshot 2025-08-23 at 6.43.53 PM.png](screen-shots/web/Screenshot%202025-08-23%20at%206.43.53%E2%80%AFPM.png)
+![Screenshot 2025-08-23 at 6.43.29 PM.png](screen-shots/web/Screenshot%202025-08-23%20at%206.43.29%E2%80%AFPM.png)
 
-## License
+### 👑 Admin Panel
+![Screenshot 2025-08-23 at 6.44.15 PM.png](screen-shots/web/Screenshot%202025-08-23%20at%206.44.15%E2%80%AFPM.png)
+![Screenshot 2025-08-23 at 6.44.26 PM.png](screen-shots/web/Screenshot%202025-08-23%20at%206.44.26%E2%80%AFPM.png)
+![Screenshot 2025-08-23 at 6.44.47 PM.png](screen-shots/web/Screenshot%202025-08-23%20at%206.44.47%E2%80%AFPM.png)
+
+</div>
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
 
 This project is developed for educational and demonstration purposes.
+
+---
+
+<div align="center">
+
+### 🌟 Star this repository if you found it helpful!
+
+**Made with ❤️ by [Kubra Felek](https://github.com/kubrafelek)**
+
+</div>
