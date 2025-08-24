@@ -2,7 +2,6 @@ package com.kubrafelek.brokagefirm.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 @Schema(description = "Request object for user login")
 public class LoginRequest {

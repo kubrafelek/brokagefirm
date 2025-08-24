@@ -34,8 +34,7 @@ public class OrderController {
     }
 
     @PostMapping
-    @Operation(summary = Constants.OperationSummaries.CREATE_NEW_ORDER,
-            description = Constants.OperationDescriptions.CREATE_ORDER_DESC)
+    @Operation(summary = Constants.OperationSummaries.CREATE_NEW_ORDER, description = Constants.OperationDescriptions.CREATE_ORDER_DESC)
     @ApiResponses(value = {
             @ApiResponse(responseCode = Constants.ResponseCodes.OK, description = Constants.ResponseDescriptions.ORDER_CREATED_SUCCESSFULLY),
             @ApiResponse(responseCode = Constants.ResponseCodes.BAD_REQUEST, description = Constants.ResponseDescriptions.INVALID_ORDER_DATA),
@@ -44,12 +43,9 @@ public class OrderController {
             @ApiResponse(responseCode = Constants.ResponseCodes.INTERNAL_SERVER_ERROR, description = Constants.ResponseDescriptions.INTERNAL_SERVER_ERROR)
     })
     public ResponseEntity<?> createOrder(
-            @Parameter(description = Constants.ParameterDescriptions.ORDER_CREATION_REQUEST, required = true)
-            @Valid @RequestBody CreateOrderRequest request,
-            @Parameter(description = Constants.ParameterDescriptions.USERNAME_AUTH, required = true)
-            @RequestHeader("Username") String username,
-            @Parameter(description = Constants.ParameterDescriptions.PASSWORD_AUTH, required = true)
-            @RequestHeader("Password") String password) {
+            @Parameter(description = Constants.ParameterDescriptions.ORDER_CREATION_REQUEST, required = true) @Valid @RequestBody CreateOrderRequest request,
+            @Parameter(description = Constants.ParameterDescriptions.USERNAME_AUTH, required = true) @RequestHeader("Username") String username,
+            @Parameter(description = Constants.ParameterDescriptions.PASSWORD_AUTH, required = true) @RequestHeader("Password") String password) {
         try {
             User user = userService.authenticate(username, password);
             if (user == null) {
@@ -66,8 +62,7 @@ public class OrderController {
                     request.getAssetName(),
                     request.getSide(),
                     request.getSize(),
-                    request.getPrice()
-            );
+                    request.getPrice());
 
             return ResponseEntity.ok(order);
         } catch (Exception e) {
@@ -76,24 +71,18 @@ public class OrderController {
     }
 
     @GetMapping
-    @Operation(summary = Constants.OperationSummaries.LIST_ORDERS,
-            description = Constants.OperationDescriptions.LIST_ORDERS_DESC)
+    @Operation(summary = Constants.OperationSummaries.LIST_ORDERS, description = Constants.OperationDescriptions.LIST_ORDERS_DESC)
     @ApiResponses(value = {
             @ApiResponse(responseCode = Constants.ResponseCodes.OK, description = Constants.ResponseDescriptions.ORDERS_RETRIEVED_SUCCESSFULLY),
             @ApiResponse(responseCode = Constants.ResponseCodes.UNAUTHORIZED, description = Constants.ResponseDescriptions.INVALID_CREDENTIALS),
             @ApiResponse(responseCode = Constants.ResponseCodes.INTERNAL_SERVER_ERROR, description = Constants.ResponseDescriptions.INTERNAL_SERVER_ERROR)
     })
     public ResponseEntity<?> listOrders(
-            @Parameter(description = "User ID to filter orders (admin only)")
-            @RequestParam(required = false) Long userId,
-            @Parameter(description = Constants.ParameterDescriptions.START_DATE_FILTER)
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @Parameter(description = Constants.ParameterDescriptions.END_DATE_FILTER)
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
-            @Parameter(description = Constants.ParameterDescriptions.USERNAME_AUTH, required = true)
-            @RequestHeader("Username") String username,
-            @Parameter(description = Constants.ParameterDescriptions.PASSWORD_AUTH, required = true)
-            @RequestHeader("Password") String password) {
+            @Parameter(description = "User ID to filter orders (admin only)") @RequestParam(required = false) Long userId,
+            @Parameter(description = Constants.ParameterDescriptions.START_DATE_FILTER) @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @Parameter(description = Constants.ParameterDescriptions.END_DATE_FILTER) @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @Parameter(description = Constants.ParameterDescriptions.USERNAME_AUTH, required = true) @RequestHeader("Username") String username,
+            @Parameter(description = Constants.ParameterDescriptions.PASSWORD_AUTH, required = true) @RequestHeader("Password") String password) {
         try {
             User user = userService.authenticate(username, password);
             if (user == null) {
@@ -132,8 +121,7 @@ public class OrderController {
     }
 
     @DeleteMapping("/{orderId}")
-    @Operation(summary = Constants.OperationSummaries.CANCEL_ORDER,
-            description = Constants.OperationDescriptions.CANCEL_ORDER_DESC)
+    @Operation(summary = Constants.OperationSummaries.CANCEL_ORDER, description = Constants.OperationDescriptions.CANCEL_ORDER_DESC)
     @ApiResponses(value = {
             @ApiResponse(responseCode = Constants.ResponseCodes.OK, description = Constants.ResponseDescriptions.ORDER_CANCELLED_SUCCESSFULLY),
             @ApiResponse(responseCode = Constants.ResponseCodes.BAD_REQUEST, description = Constants.ResponseDescriptions.ORDER_CANNOT_BE_CANCELLED),
@@ -142,12 +130,9 @@ public class OrderController {
             @ApiResponse(responseCode = Constants.ResponseCodes.INTERNAL_SERVER_ERROR, description = Constants.ResponseDescriptions.INTERNAL_SERVER_ERROR)
     })
     public ResponseEntity<?> cancelOrder(
-            @Parameter(description = Constants.ParameterDescriptions.ORDER_ID_TO_CANCEL, required = true)
-            @PathVariable Long orderId,
-            @Parameter(description = Constants.ParameterDescriptions.USERNAME_AUTH, required = true)
-            @RequestHeader("Username") String username,
-            @Parameter(description = Constants.ParameterDescriptions.PASSWORD_AUTH, required = true)
-            @RequestHeader("Password") String password) {
+            @Parameter(description = Constants.ParameterDescriptions.ORDER_ID_TO_CANCEL, required = true) @PathVariable Long orderId,
+            @Parameter(description = Constants.ParameterDescriptions.USERNAME_AUTH, required = true) @RequestHeader("Username") String username,
+            @Parameter(description = Constants.ParameterDescriptions.PASSWORD_AUTH, required = true) @RequestHeader("Password") String password) {
         try {
             User user = userService.authenticate(username, password);
             if (user == null) {
@@ -162,8 +147,7 @@ public class OrderController {
     }
 
     @PostMapping("/match")
-    @Operation(summary = Constants.OperationSummaries.MATCH_ORDER,
-            description = Constants.OperationDescriptions.MATCH_ORDER_DESC)
+    @Operation(summary = Constants.OperationSummaries.MATCH_ORDER, description = Constants.OperationDescriptions.MATCH_ORDER_DESC)
     @ApiResponses(value = {
             @ApiResponse(responseCode = Constants.ResponseCodes.OK, description = Constants.ResponseDescriptions.ORDER_MATCHED_SUCCESSFULLY),
             @ApiResponse(responseCode = Constants.ResponseCodes.BAD_REQUEST, description = Constants.ResponseDescriptions.ORDER_CANNOT_BE_MATCHED),
@@ -172,20 +156,19 @@ public class OrderController {
             @ApiResponse(responseCode = Constants.ResponseCodes.INTERNAL_SERVER_ERROR, description = Constants.ResponseDescriptions.INTERNAL_SERVER_ERROR)
     })
     public ResponseEntity<?> matchOrder(
-            @Parameter(description = Constants.ParameterDescriptions.MATCH_ORDER_REQUEST, required = true)
-            @Valid @RequestBody MatchOrderRequest request,
-            @Parameter(description = Constants.ParameterDescriptions.USERNAME_AUTH, required = true)
-            @RequestHeader("Username") String username,
-            @Parameter(description = Constants.ParameterDescriptions.PASSWORD_AUTH, required = true)
-            @RequestHeader("Password") String password) {
+            @Parameter(description = Constants.ParameterDescriptions.MATCH_ORDER_REQUEST, required = true) @Valid @RequestBody MatchOrderRequest request,
+            @Parameter(description = Constants.ParameterDescriptions.USERNAME_AUTH, required = true) @RequestHeader("Username") String username,
+            @Parameter(description = Constants.ParameterDescriptions.PASSWORD_AUTH, required = true) @RequestHeader("Password") String password) {
         try {
             User user = userService.authenticate(username, password);
             if (user == null) {
                 return ResponseEntity.status(401).body(Constants.ErrorMessages.INVALID_CREDENTIALS);
             }
 
+            // Only admin users can match orders
             if (!user.isAdmin()) {
-                return ResponseEntity.status(403).body(Constants.ErrorMessages.ONLY_ADMIN_USERS_CAN_MATCH_ORDERS);
+                // Use the explicit admin-match constant for consistency
+                return ResponseEntity.status(403).body(Constants.ErrorMessages.ONLY_ADMIN_MATCH_ORDERS);
             }
 
             Order matchedOrder = orderService.matchOrder(request.getOrderId());
@@ -196,8 +179,7 @@ public class OrderController {
     }
 
     @GetMapping("/pending")
-    @Operation(summary = Constants.OperationSummaries.LIST_PENDING_ORDERS,
-            description = Constants.OperationDescriptions.LIST_PENDING_ORDERS_DESC)
+    @Operation(summary = Constants.OperationSummaries.LIST_PENDING_ORDERS, description = Constants.OperationDescriptions.LIST_PENDING_ORDERS_DESC)
     @ApiResponses(value = {
             @ApiResponse(responseCode = Constants.ResponseCodes.OK, description = Constants.ResponseDescriptions.PENDING_ORDERS_RETRIEVED_SUCCESSFULLY),
             @ApiResponse(responseCode = Constants.ResponseCodes.UNAUTHORIZED, description = Constants.ResponseDescriptions.INVALID_CREDENTIALS),
@@ -205,10 +187,8 @@ public class OrderController {
             @ApiResponse(responseCode = Constants.ResponseCodes.INTERNAL_SERVER_ERROR, description = Constants.ResponseDescriptions.INTERNAL_SERVER_ERROR)
     })
     public ResponseEntity<?> listPendingOrders(
-            @Parameter(description = Constants.ParameterDescriptions.USERNAME_AUTH, required = true)
-            @RequestHeader("Username") String username,
-            @Parameter(description = Constants.ParameterDescriptions.PASSWORD_AUTH, required = true)
-            @RequestHeader("Password") String password) {
+            @Parameter(description = Constants.ParameterDescriptions.USERNAME_AUTH, required = true) @RequestHeader("Username") String username,
+            @Parameter(description = Constants.ParameterDescriptions.PASSWORD_AUTH, required = true) @RequestHeader("Password") String password) {
         try {
             User user = userService.authenticate(username, password);
             if (user == null) {
@@ -216,13 +196,15 @@ public class OrderController {
             }
 
             if (!user.isAdmin()) {
-                return ResponseEntity.status(403).body(Constants.ErrorMessages.ONLY_ADMIN_USERS_CAN_VIEW_PENDING_ORDERS);
+                return ResponseEntity.status(403)
+                        .body(Constants.ErrorMessages.ONLY_ADMIN_USERS_CAN_VIEW_PENDING_ORDERS);
             }
 
             List<Order> pendingOrders = orderService.getPendingOrders();
             return ResponseEntity.ok(pendingOrders);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Constants.ErrorMessages.FAILED_TO_LIST_PENDING_ORDERS + e.getMessage());
+            return ResponseEntity.status(500)
+                    .body(Constants.ErrorMessages.FAILED_TO_LIST_PENDING_ORDERS + e.getMessage());
         }
     }
 }

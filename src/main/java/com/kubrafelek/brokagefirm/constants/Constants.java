@@ -88,7 +88,7 @@ public final class Constants {
         public static final String INSUFFICIENT_USABLE_BALANCE = "Insufficient usable balance";
         public static final String INVALID_CREDENTIALS = "Invalid credentials";
         public static final String LOGIN_FAILED = "Login failed: ";
-        public static final String ONLY_ADMIN_USERS_CAN_MATCH_ORDERS = "Only admin users can match orders";
+        public static final String ONLY_ADMIN_MATCH_ORDERS = "Only admin users can match orders";
         public static final String ONLY_ADMIN_USERS_CAN_VIEW_PENDING_ORDERS = "Only admin users can view all pending orders";
         public static final String ONLY_ADMIN_USERS_CAN_CREATE_ORDERS = "Only admin users can create orders for customers";
         public static final String ONLY_PENDING_ORDERS_CAN_BE_CANCELLED = "Only pending orders can be cancelled";
