@@ -8,10 +8,6 @@
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-563D7C?style=for-the-badge&logo=bootstrap&logoColor=white)
 ![H2](https://img.shields.io/badge/H2-Database-blue?style=for-the-badge)
 
-[![CI/CD Pipeline](https://github.com/your-username/brokagefirm/actions/workflows/ci-coverage.yml/badge.svg)](https://github.com/your-username/brokagefirm/actions/workflows/ci-coverage.yml)
-[![codecov](https://codecov.io/gh/your-username/brokagefirm/branch/main/graph/badge.svg)](https://codecov.io/gh/your-username/brokagefirm)
-[![Coverage](https://your-username.github.io/brokagefirm/coverage/badges/jacoco.svg)](https://your-username.github.io/brokagefirm/coverage/)
-
 A comprehensive full-stack application for managing stock orders in a brokerage firm with modern web interface and robust REST APIs.
 
 </div>
@@ -328,8 +324,6 @@ This project maintains high code quality with comprehensive test coverage:
 - **Method Coverage**: Complete service layer coverage
 
 ### 📈 Coverage Reports
-- **GitHub Pages**: [Live Coverage Report](https://your-username.github.io/brokagefirm/coverage/)
-- **Codecov**: Integrated with PR comments and status checks
 - **Local Reports**: Available in `target/site/jacoco/` after running tests
 
 ### 🔧 Running Coverage Locally
@@ -438,17 +432,6 @@ For production deployment, consider:
 
 </div>
 
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
 
 ## 📄 License
 
@@ -457,8 +440,6 @@ This project is developed for educational and demonstration purposes.
 ---
 
 <div align="center">
-
-### 🌟 Star this repository if you found it helpful!
 
 **Made with ❤️ by [Kubra Felek](https://github.com/kubrafelek)**
 
