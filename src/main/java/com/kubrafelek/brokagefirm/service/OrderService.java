@@ -44,7 +44,7 @@ public class OrderService {
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     public Order createOrder(Long userId, String assetName, OrderSide side, BigDecimal size, BigDecimal price) {
         logger.info("Creating order for user: {}, asset: {}, side: {}, size: {}, price: {}",
-            userId, assetName, side, size, price);
+                userId, assetName, side, size, price);
 
         validateOrderParameters(assetName, size, price);
 
@@ -53,22 +53,27 @@ public class OrderService {
 
         try {
             if (side == OrderSide.BUY) {
-                logger.info("Processing BUY order - atomic TRY reservation for user: {}, required amount: {}", userId, totalAmount);
+                logger.info("Processing BUY order - atomic TRY reservation for user: {}, required amount: {}", userId,
+                        totalAmount);
                 assetService.atomicReserveAsset(userId, TRY_ASSET, totalAmount);
-                logger.info("Successfully reserved TRY asset for BUY order - user: {}, amount: {}", userId, totalAmount);
+                logger.info("Successfully reserved TRY asset for BUY order - user: {}, amount: {}", userId,
+                        totalAmount);
             } else {
-                logger.info("Processing SELL order - atomic {} reservation for user: {}, required size: {}", assetName, userId, size);
+                logger.info("Processing SELL order - atomic {} reservation for user: {}, required size: {}", assetName,
+                        userId, size);
                 assetService.atomicReserveAsset(userId, assetName, size);
-                logger.info("Successfully reserved {} asset for SELL order - user: {}, size: {}", assetName, userId, size);
+                logger.info("Successfully reserved {} asset for SELL order - user: {}, size: {}", assetName, userId,
+                        size);
             }
 
             Order order = new Order(userId, assetName, side, size, price, OrderStatus.PENDING, LocalDateTime.now());
             Order savedOrder = orderRepository.save(order);
             logger.info("Order created successfully with ID: {} for user: {}, asset: {}, side: {}",
-                savedOrder.getId(), userId, assetName, side);
+                    savedOrder.getId(), userId, assetName, side);
             return savedOrder;
         } catch (Exception e) {
-            logger.error("Failed to create order for user: {}, asset: {}, error: {}", userId, assetName, e.getMessage());
+            logger.error("Failed to create order for user: {}, asset: {}, error: {}", userId, assetName,
+                    e.getMessage());
             throw e;
         }
     }
@@ -132,26 +137,28 @@ public class OrderService {
 
         Order order = orderOpt.get();
         logger.info("Found order: {} for user: {}, status: {}, side: {}",
-            orderId, order.getUserId(), order.getStatus(), order.getOrderSide());
+                orderId, order.getUserId(), order.getStatus(), order.getOrderSide());
 
         if (!isAdmin && !order.getUserId().equals(userId)) {
             logger.warn("Unauthorized cancellation attempt - order: {} belongs to user: {} but requested by user: {}",
-                orderId, order.getUserId(), userId);
+                    orderId, order.getUserId(), userId);
             throw new UnauthorizedOrderAccessException(Constants.ErrorMessages.YOU_CAN_ONLY_CANCEL_YOUR_OWN_ORDERS);
         }
 
         if (order.getStatus() != OrderStatus.PENDING) {
-            logger.warn("Invalid order status for cancellation - order: {}, current status: {}", orderId, order.getStatus());
+            logger.warn("Invalid order status for cancellation - order: {}, current status: {}", orderId,
+                    order.getStatus());
             throw new InvalidOrderStatusException(Constants.ErrorMessages.ONLY_PENDING_ORDERS_CAN_BE_CANCELLED);
         }
 
         BigDecimal totalAmount = order.getSize().multiply(order.getPrice());
         if (order.getOrderSide() == OrderSide.BUY) {
-            logger.info("Releasing TRY asset for cancelled BUY order - user: {}, amount: {}", order.getUserId(), totalAmount);
+            logger.info("Releasing TRY asset for cancelled BUY order - user: {}, amount: {}", order.getUserId(),
+                    totalAmount);
             assetService.releaseAsset(order.getUserId(), TRY_ASSET, totalAmount);
         } else {
             logger.info("Releasing {} asset for cancelled SELL order - user: {}, size: {}",
-                order.getAssetName(), order.getUserId(), order.getSize());
+                    order.getAssetName(), order.getUserId(), order.getSize());
             assetService.releaseAsset(order.getUserId(), order.getAssetName(), order.getSize());
         }
 
@@ -173,10 +180,12 @@ public class OrderService {
 
         Order order = orderOpt.get();
         logger.info("Found order for matching: {}, user: {}, asset: {}, side: {}, size: {}, price: {}",
-            orderId, order.getUserId(), order.getAssetName(), order.getOrderSide(), order.getSize(), order.getPrice());
+                orderId, order.getUserId(), order.getAssetName(), order.getOrderSide(), order.getSize(),
+                order.getPrice());
 
         if (order.getStatus() != OrderStatus.PENDING) {
-            logger.warn("Invalid order status for matching - order: {}, current status: {}", orderId, order.getStatus());
+            logger.warn("Invalid order status for matching - order: {}, current status: {}", orderId,
+                    order.getStatus());
             throw new InvalidOrderStatusException(Constants.ErrorMessages.ONLY_PENDING_ORDERS_CAN_BE_MATCHED);
         }
 
@@ -189,7 +198,7 @@ public class OrderService {
             order.setStatus(OrderStatus.MATCHED);
             Order matchedOrder = orderRepository.save(order);
             logger.info("Order matched successfully - orderId: {}, user: {}, asset: {}, side: {}",
-                orderId, order.getUserId(), order.getAssetName(), order.getOrderSide());
+                    orderId, order.getUserId(), order.getAssetName(), order.getOrderSide());
             return matchedOrder;
         } catch (Exception e) {
             logger.error("Failed to match order: {}, error: {}", orderId, e.getMessage());
@@ -200,7 +209,7 @@ public class OrderService {
     private void performAtomicAssetTransfer(Order order, BigDecimal totalAmount) {
         if (order.getOrderSide() == OrderSide.BUY) {
             logger.info("Processing BUY order match - deducting TRY and adding target asset");
-            deductMoneyFromUser(order, totalAmount);
+            extractMoneyFromUser(order, totalAmount);
             addAssetToUser(order);
         } else {
             logger.info("Processing SELL order match - deducting target asset and adding TRY");
@@ -220,7 +229,7 @@ public class OrderService {
             tryAsset.setUsableSize(newUsableSize);
             assetRepository.save(tryAsset);
             logger.info("Added TRY to existing asset for user: {}, amount: {}, new size: {}, new usable size: {}",
-                order.getUserId(), totalAmount, newSize, newUsableSize);
+                    order.getUserId(), totalAmount, newSize, newUsableSize);
         } else {
             Asset newTryAsset = new Asset(order.getUserId(), TRY_ASSET, totalAmount, totalAmount);
             assetRepository.save(newTryAsset);
@@ -234,46 +243,50 @@ public class OrderService {
         if (assetOpt.isPresent()) {
             Asset asset = assetOpt.get();
             BigDecimal newSize = asset.getSize().subtract(order.getSize());
+            BigDecimal newUsableSize = newSize;
             asset.setSize(newSize);
+            asset.setUsableSize(newUsableSize);
             assetRepository.save(asset);
-            logger.info("Deducted {} from user: {}, amount: {}, new size: {}",
-                order.getAssetName(), order.getUserId(), order.getSize(), newSize);
+            logger.info("Deducted {} from user: {}, amount: {}, new size: {}, new usable size: {}",
+                    order.getAssetName(), order.getUserId(), order.getSize(), newSize, newUsableSize);
         } else {
             logger.warn("{} asset not found for user: {} during SELL order match",
-                order.getAssetName(), order.getUserId());
+                    order.getAssetName(), order.getUserId());
         }
     }
 
     private void addAssetToUser(Order order) {
         // Add target asset to user
-        Optional<Asset> targetAssetOpt = assetRepository.findByUserIdAndAssetName(order.getUserId(), order.getAssetName());
+        Optional<Asset> targetAssetOpt = assetRepository.findByUserIdAndAssetName(order.getUserId(),
+                order.getAssetName());
         if (targetAssetOpt.isPresent()) {
             Asset targetAsset = targetAssetOpt.get();
             BigDecimal newSize = targetAsset.getSize().add(order.getSize());
-            BigDecimal newUsableSize = targetAsset.getUsableSize().add(order.getSize());
+            BigDecimal newUsableSize = newSize;
             targetAsset.setSize(newSize);
             targetAsset.setUsableSize(newUsableSize);
             assetRepository.save(targetAsset);
             logger.info("Added {} to existing asset for user: {}, amount: {}, new size: {}, new usable size: {}",
-                order.getAssetName(), order.getUserId(), order.getSize(), newSize, newUsableSize);
+                    order.getAssetName(), order.getUserId(), order.getSize(), newSize, newUsableSize);
         } else {
             Asset newAsset = new Asset(order.getUserId(), order.getAssetName(), order.getSize(), order.getSize());
             assetRepository.save(newAsset);
-            logger.info("Created new {} asset for user: {}, size: {}",
-                order.getAssetName(), order.getUserId(), order.getSize());
+            logger.info("Created new {} asset for user: {}, size: {} (fully available)",
+                    order.getAssetName(), order.getUserId(), order.getSize());
         }
     }
 
-    private void deductMoneyFromUser(Order order, BigDecimal totalAmount) {
-        // Deduct TRY from user
+    private void extractMoneyFromUser(Order order, BigDecimal totalAmount) {
+        // Deduct TRY from user during BUY order matching
         Optional<Asset> tryAssetOpt = assetRepository.findByUserIdAndAssetName(order.getUserId(), TRY_ASSET);
         if (tryAssetOpt.isPresent()) {
             Asset tryAsset = tryAssetOpt.get();
             BigDecimal newTrySize = tryAsset.getSize().subtract(totalAmount);
             tryAsset.setSize(newTrySize);
+            tryAsset.setUsableSize(newTrySize);
             assetRepository.save(tryAsset);
-            logger.info("Deducted TRY from user: {}, amount: {}, new size: {}",
-                order.getUserId(), totalAmount, newTrySize);
+            logger.info("Deducted TRY from user: {}, amount: {}, new size: {}, new usable size: {}",
+                    order.getUserId(), totalAmount, newTrySize, newTrySize);
         } else {
             logger.warn("TRY asset not found for user: {} during BUY order match", order.getUserId());
         }
