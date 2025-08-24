@@ -6,7 +6,6 @@ import LoadingSpinner from './LoadingSpinner';
 
 const Orders = ({ user }) => {
   const [orders, setOrders] = useState([]);
-  const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -25,12 +24,8 @@ const Orders = ({ user }) => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [ordersData, assetsData] = await Promise.all([
-        ApiService.getOrders(),
-        ApiService.getAssets()
-      ]);
+      const ordersData = await ApiService.getOrders();
       setOrders(ordersData);
-      setAssets(assetsData);
     } catch (error) {
       toast.error('Failed to load orders');
     } finally {
