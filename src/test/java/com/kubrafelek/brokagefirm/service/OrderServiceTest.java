@@ -1,11 +1,13 @@
 package com.kubrafelek.brokagefirm.service;
 
-import com.kubrafelek.brokagefirm.entity.Order;
 import com.kubrafelek.brokagefirm.entity.Asset;
+import com.kubrafelek.brokagefirm.entity.Order;
 import com.kubrafelek.brokagefirm.enums.OrderSide;
 import com.kubrafelek.brokagefirm.enums.OrderStatus;
-import com.kubrafelek.brokagefirm.repository.OrderRepository;
+import com.kubrafelek.brokagefirm.exception.InvalidAssetException;
+import com.kubrafelek.brokagefirm.exception.InvalidOrderException;
 import com.kubrafelek.brokagefirm.repository.AssetRepository;
+import com.kubrafelek.brokagefirm.repository.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,9 +24,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
@@ -52,8 +52,9 @@ class OrderServiceTest {
 
     @Test
     void testCreateBuyOrder_Success() {
-        when(assetService.hasEnoughUsableBalance(eq(1L), eq("TRY"), any(BigDecimal.class)))
-            .thenReturn(true);
+        // Mock asset validation and atomic reservation
+        when(assetService.isValidTradableAsset("AAPL")).thenReturn(true);
+        doNothing().when(assetService).atomicReserveAsset(eq(1L), eq("TRY"), any(BigDecimal.class));
         when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
 
         Order result = orderService.createOrder(1L, "AAPL", OrderSide.BUY,
@@ -61,8 +62,8 @@ class OrderServiceTest {
 
         assertNotNull(result);
         assertEquals(OrderStatus.PENDING, result.getStatus());
-        verify(assetService).hasEnoughUsableBalance(eq(1L), eq("TRY"), any(BigDecimal.class));
-        verify(assetService).reserveAsset(eq(1L), eq("TRY"), any(BigDecimal.class));
+        verify(assetService).isValidTradableAsset("AAPL");
+        verify(assetService).atomicReserveAsset(eq(1L), eq("TRY"), any(BigDecimal.class));
         verify(orderRepository).save(any(Order.class));
     }
 
@@ -70,8 +71,10 @@ class OrderServiceTest {
     void testCreateSellOrder_Success() {
         Order sellOrder = new Order(1L, "AAPL", OrderSide.SELL, new BigDecimal("5.00"),
                                    new BigDecimal("150.00"), OrderStatus.PENDING, LocalDateTime.now());
-        when(assetService.hasEnoughUsableBalance(eq(1L), eq("AAPL"), any(BigDecimal.class)))
-            .thenReturn(true);
+
+        // Mock asset validation and atomic reservation
+        when(assetService.isValidTradableAsset("AAPL")).thenReturn(true);
+        doNothing().when(assetService).atomicReserveAsset(eq(1L), eq("AAPL"), any(BigDecimal.class));
         when(orderRepository.save(any(Order.class))).thenReturn(sellOrder);
 
         Order result = orderService.createOrder(1L, "AAPL", OrderSide.SELL,
@@ -79,19 +82,58 @@ class OrderServiceTest {
 
         assertNotNull(result);
         assertEquals(OrderStatus.PENDING, result.getStatus());
-        verify(assetService).hasEnoughUsableBalance(eq(1L), eq("AAPL"), any(BigDecimal.class));
-        verify(assetService).reserveAsset(eq(1L), eq("AAPL"), any(BigDecimal.class));
+        verify(assetService).isValidTradableAsset("AAPL");
+        verify(assetService).atomicReserveAsset(eq(1L), eq("AAPL"), any(BigDecimal.class));
         verify(orderRepository).save(any(Order.class));
     }
 
     @Test
+    void testCreateOrder_InvalidAsset() {
+        // Mock invalid asset
+        when(assetService.isValidTradableAsset("INVALID")).thenReturn(false);
+
+        assertThrows(InvalidAssetException.class, () ->
+            orderService.createOrder(1L, "INVALID", OrderSide.BUY,
+                                    new BigDecimal("10.00"), new BigDecimal("150.00")));
+
+        verify(assetService).isValidTradableAsset("INVALID");
+    }
+
+    @Test
+    void testCreateOrder_InvalidSize() {
+        when(assetService.isValidTradableAsset("AAPL")).thenReturn(true);
+
+        assertThrows(InvalidOrderException.class, () ->
+            orderService.createOrder(1L, "AAPL", OrderSide.BUY,
+                                    new BigDecimal("0.001"), new BigDecimal("150.00")));
+
+        verify(assetService).isValidTradableAsset("AAPL");
+    }
+
+    @Test
+    void testCreateOrder_InvalidPrice() {
+        when(assetService.isValidTradableAsset("AAPL")).thenReturn(true);
+
+        assertThrows(InvalidOrderException.class, () ->
+            orderService.createOrder(1L, "AAPL", OrderSide.BUY,
+                                    new BigDecimal("10.00"), new BigDecimal("0.001")));
+
+        verify(assetService).isValidTradableAsset("AAPL");
+    }
+
+    @Test
     void testCreateBuyOrder_InsufficientBalance() {
-        when(assetService.hasEnoughUsableBalance(eq(1L), eq("TRY"), any(BigDecimal.class)))
-            .thenReturn(false);
+        // Mock asset validation and atomic reservation failure
+        when(assetService.isValidTradableAsset("AAPL")).thenReturn(true);
+        doThrow(new RuntimeException("Insufficient usable balance"))
+            .when(assetService).atomicReserveAsset(eq(1L), eq("TRY"), any(BigDecimal.class));
 
         assertThrows(RuntimeException.class, () ->
             orderService.createOrder(1L, "AAPL", OrderSide.BUY,
                                     new BigDecimal("10.00"), new BigDecimal("150.00")));
+
+        verify(assetService).isValidTradableAsset("AAPL");
+        verify(assetService).atomicReserveAsset(eq(1L), eq("TRY"), any(BigDecimal.class));
     }
 
     @Test
@@ -110,6 +152,7 @@ class OrderServiceTest {
     void testCancelOrder_Success() {
         when(orderRepository.findById(1L)).thenReturn(Optional.of(testOrder));
         when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+        doNothing().when(assetService).releaseAsset(eq(1L), eq("TRY"), any(BigDecimal.class));
 
         Order result = orderService.cancelOrder(1L, 1L, false);
 
@@ -162,6 +205,15 @@ class OrderServiceTest {
     @Test
     void testMatchOrder_NotFound() {
         when(orderRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () ->
+            orderService.matchOrder(1L));
+    }
+
+    @Test
+    void testMatchOrder_NotPending() {
+        testOrder.setStatus(OrderStatus.MATCHED);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(testOrder));
 
         assertThrows(RuntimeException.class, () ->
             orderService.matchOrder(1L));

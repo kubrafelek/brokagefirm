@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -86,5 +87,52 @@ public class AssetService {
         } else {
             logger.warn("Attempted to release asset that doesn't exist: userId={}, assetName={}", userId, assetName);
         }
+    }
+
+    public List<String> getAvailableAssetNames() {
+        logger.info("Retrieving available asset names for trading");
+        List<String> assetNames = assetRepository.findDistinctAssetNames();
+        // Filter out TRY as it's not a tradeable asset
+        List<String> tradeableAssets = assetNames.stream()
+            .filter(name -> !"TRY".equals(name))
+            .sorted()
+            .toList();
+        logger.info("Found {} tradeable assets: {}", tradeableAssets.size(), tradeableAssets);
+        return tradeableAssets;
+    }
+
+    public boolean isValidTradableAsset(String assetName) {
+        if (assetName == null || assetName.trim().isEmpty()) {
+            return false;
+        }
+
+        // TRY is not a tradeable asset - it's the base currency
+        if ("TRY".equals(assetName)) {
+            return false;
+        }
+
+        // Check if asset exists in the system
+        return assetRepository.existsByAssetName(assetName);
+    }
+
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    public void atomicReserveAsset(Long userId, String assetName, BigDecimal amount) {
+        logger.info("Attempting atomic reservation for user: {}, asset: {}, amount: {}", userId, assetName, amount);
+
+        // Use pessimistic locking to prevent race conditions
+        Asset asset = assetRepository.findByUserIdAndAssetNameForUpdate(userId, assetName)
+            .orElseThrow(() -> new AssetNotFoundException(Constants.ErrorMessages.ASSET_NOT_FOUND));
+
+        BigDecimal newUsableSize = asset.getUsableSize().subtract(amount);
+        if (newUsableSize.compareTo(BigDecimal.ZERO) < 0) {
+            logger.warn("Insufficient usable balance for atomic reservation - user: {}, asset: {}, current: {}, requested: {}",
+                userId, assetName, asset.getUsableSize(), amount);
+            throw new InsufficientBalanceException(Constants.ErrorMessages.INSUFFICIENT_USABLE_BALANCE);
+        }
+
+        asset.setUsableSize(newUsableSize);
+        assetRepository.save(asset);
+        logger.info("Atomic asset reservation successful for user: {}, asset: {}, amount: {}, new usable size: {}",
+            userId, assetName, amount, newUsableSize);
     }
 }

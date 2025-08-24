@@ -5,16 +5,18 @@ import com.kubrafelek.brokagefirm.entity.Asset;
 import com.kubrafelek.brokagefirm.repository.AssetRepository;
 import com.kubrafelek.brokagefirm.enums.OrderSide;
 import com.kubrafelek.brokagefirm.enums.OrderStatus;
-import com.kubrafelek.brokagefirm.exception.InsufficientBalanceException;
 import com.kubrafelek.brokagefirm.exception.InvalidOrderStatusException;
 import com.kubrafelek.brokagefirm.exception.OrderNotFoundException;
 import com.kubrafelek.brokagefirm.exception.UnauthorizedOrderAccessException;
+import com.kubrafelek.brokagefirm.exception.InvalidAssetException;
+import com.kubrafelek.brokagefirm.exception.InvalidOrderException;
 import com.kubrafelek.brokagefirm.repository.OrderRepository;
 import com.kubrafelek.brokagefirm.constants.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,6 +28,8 @@ public class OrderService {
 
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
     private static final String TRY_ASSET = "TRY";
+    private static final BigDecimal MIN_ORDER_SIZE = BigDecimal.valueOf(0.01);
+    private static final BigDecimal MIN_PRICE = BigDecimal.valueOf(0.01);
 
     private final OrderRepository orderRepository;
     private final AssetService assetService;
@@ -37,36 +41,49 @@ public class OrderService {
         this.assetRepository = assetRepository;
     }
 
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     public Order createOrder(Long userId, String assetName, OrderSide side, BigDecimal size, BigDecimal price) {
         logger.info("Creating order for user: {}, asset: {}, side: {}, size: {}, price: {}",
             userId, assetName, side, size, price);
 
+        validateOrderParameters(assetName, size, price);
+
         BigDecimal totalAmount = size.multiply(price);
         logger.info("Calculated total amount for order: {}", totalAmount);
 
-        if (side == OrderSide.BUY) {
-            logger.info("Processing BUY order - checking TRY balance for user: {}, required amount: {}", userId, totalAmount);
-            if (!assetService.hasEnoughUsableBalance(userId, TRY_ASSET, totalAmount)) {
-                logger.warn("Insufficient TRY balance for BUY order - user: {}, required: {}", userId, totalAmount);
-                throw new InsufficientBalanceException(Constants.ErrorMessages.INSUFFICIENT_USABLE_BALANCE);
+        try {
+            if (side == OrderSide.BUY) {
+                logger.info("Processing BUY order - atomic TRY reservation for user: {}, required amount: {}", userId, totalAmount);
+                assetService.atomicReserveAsset(userId, TRY_ASSET, totalAmount);
+                logger.info("Successfully reserved TRY asset for BUY order - user: {}, amount: {}", userId, totalAmount);
+            } else {
+                logger.info("Processing SELL order - atomic {} reservation for user: {}, required size: {}", assetName, userId, size);
+                assetService.atomicReserveAsset(userId, assetName, size);
+                logger.info("Successfully reserved {} asset for SELL order - user: {}, size: {}", assetName, userId, size);
             }
-            assetService.reserveAsset(userId, TRY_ASSET, totalAmount);
-            logger.info("Reserved TRY asset for BUY order - user: {}, amount: {}", userId, totalAmount);
-        } else {
-            logger.info("Processing SELL order - checking {} balance for user: {}, required size: {}", assetName, userId, size);
-            if (!assetService.hasEnoughUsableBalance(userId, assetName, size)) {
-                logger.warn("Insufficient {} balance for SELL order - user: {}, required: {}", assetName, userId, size);
-                throw new InsufficientBalanceException(Constants.ErrorMessages.INSUFFICIENT_USABLE_BALANCE);
-            }
-            assetService.reserveAsset(userId, assetName, size);
-            logger.info("Reserved {} asset for SELL order - user: {}, size: {}", assetName, userId, size);
+
+            Order order = new Order(userId, assetName, side, size, price, OrderStatus.PENDING, LocalDateTime.now());
+            Order savedOrder = orderRepository.save(order);
+            logger.info("Order created successfully with ID: {} for user: {}, asset: {}, side: {}",
+                savedOrder.getId(), userId, assetName, side);
+            return savedOrder;
+        } catch (Exception e) {
+            logger.error("Failed to create order for user: {}, asset: {}, error: {}", userId, assetName, e.getMessage());
+            throw e;
+        }
+    }
+
+    private void validateOrderParameters(String assetName, BigDecimal size, BigDecimal price) {
+        if (!assetService.isValidTradableAsset(assetName)) {
+            throw new InvalidAssetException("Asset " + assetName + " is not available for trading");
         }
 
-        Order order = new Order(userId, assetName, side, size, price, OrderStatus.PENDING, LocalDateTime.now());
-        Order savedOrder = orderRepository.save(order);
-        logger.info("Order created successfully with ID: {} for user: {}, asset: {}, side: {}",
-            savedOrder.getId(), userId, assetName, side);
-        return savedOrder;
+        if (size == null || size.compareTo(MIN_ORDER_SIZE) < 0) {
+            throw new InvalidOrderException("Minimum order size is " + MIN_ORDER_SIZE);
+        }
+        if (price == null || price.compareTo(MIN_PRICE) < 0) {
+            throw new InvalidOrderException("Minimum price is " + MIN_PRICE + " TRY");
+        }
     }
 
     public List<Order> getOrdersByUserId(Long userId) {
@@ -144,6 +161,7 @@ public class OrderService {
         return cancelledOrder;
     }
 
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public Order matchOrder(Long orderId) {
         logger.info("Attempting to match order: {}", orderId);
 
@@ -165,21 +183,30 @@ public class OrderService {
         BigDecimal totalAmount = order.getSize().multiply(order.getPrice());
         logger.info("Processing order match with total amount: {}", totalAmount);
 
+        try {
+            performAtomicAssetTransfer(order, totalAmount);
+
+            order.setStatus(OrderStatus.MATCHED);
+            Order matchedOrder = orderRepository.save(order);
+            logger.info("Order matched successfully - orderId: {}, user: {}, asset: {}, side: {}",
+                orderId, order.getUserId(), order.getAssetName(), order.getOrderSide());
+            return matchedOrder;
+        } catch (Exception e) {
+            logger.error("Failed to match order: {}, error: {}", orderId, e.getMessage());
+            throw new RuntimeException("Failed to match order: " + e.getMessage(), e);
+        }
+    }
+
+    private void performAtomicAssetTransfer(Order order, BigDecimal totalAmount) {
         if (order.getOrderSide() == OrderSide.BUY) {
             logger.info("Processing BUY order match - deducting TRY and adding target asset");
-            getDeductMoneyFromUser(order, totalAmount);
+            deductMoneyFromUser(order, totalAmount);
             addAssetToUser(order);
         } else {
             logger.info("Processing SELL order match - deducting target asset and adding TRY");
-            getDeductTargetAssetFromUser(order);
+            deductTargetAssetFromUser(order);
             addMoneyToUser(order, totalAmount);
         }
-
-        order.setStatus(OrderStatus.MATCHED);
-        Order matchedOrder = orderRepository.save(order);
-        logger.info("Order matched successfully - orderId: {}, user: {}, asset: {}, side: {}",
-            orderId, order.getUserId(), order.getAssetName(), order.getOrderSide());
-        return matchedOrder;
     }
 
     private void addMoneyToUser(Order order, BigDecimal totalAmount) {
@@ -201,7 +228,7 @@ public class OrderService {
         }
     }
 
-    private void getDeductTargetAssetFromUser(Order order) {
+    private void deductTargetAssetFromUser(Order order) {
         // Deduct target asset from user
         Optional<Asset> assetOpt = assetRepository.findByUserIdAndAssetName(order.getUserId(), order.getAssetName());
         if (assetOpt.isPresent()) {
@@ -237,7 +264,7 @@ public class OrderService {
         }
     }
 
-    private void getDeductMoneyFromUser(Order order, BigDecimal totalAmount) {
+    private void deductMoneyFromUser(Order order, BigDecimal totalAmount) {
         // Deduct TRY from user
         Optional<Asset> tryAssetOpt = assetRepository.findByUserIdAndAssetName(order.getUserId(), TRY_ASSET);
         if (tryAssetOpt.isPresent()) {

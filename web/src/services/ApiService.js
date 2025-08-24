@@ -131,13 +131,9 @@ class ApiService {
   // Get available asset names for dropdown population
   async getAvailableAssets() {
     try {
-      // Get all assets from the system to extract unique asset names
-      const assets = await this.getAssets();
-      // Extract unique asset names, excluding TRY (currency)
-      const uniqueAssets = [...new Set(assets.map(asset => asset.assetName))]
-        .filter(assetName => assetName !== 'TRY')
-        .sort();
-      return uniqueAssets;
+      // Use the new backend endpoint for available assets
+      const response = await this.api.get('/assets/available');
+      return response.data;
     } catch (error) {
       console.error('Failed to fetch available assets:', error);
       // Fallback to hardcoded assets if API fails
