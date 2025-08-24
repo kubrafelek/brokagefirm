@@ -41,7 +41,7 @@ const Login = ({ onLogin }) => {
       <Container>
         <Card className="login-card mx-auto">
           <Card.Header className="text-center">
-            <h3 className="mb-0">Brokerage Firm</h3>
+            <h3 className="mb-0">Brokage Firm</h3>
             <small className="text-muted">Trading Platform</small>
           </Card.Header>
           <Card.Body className="p-4">

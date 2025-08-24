@@ -1,4 +1,4 @@
-# 📈 Brokerage Firm Management System
+# 📈 Brokage Firm Management System
 
 <div align="center">
 
@@ -8,7 +8,7 @@
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-563D7C?style=for-the-badge&logo=bootstrap&logoColor=white)
 ![H2](https://img.shields.io/badge/H2-Database-blue?style=for-the-badge)
 
-A comprehensive full-stack application for managing stock orders in a brokerage firm with modern web interface and robust REST APIs.
+A comprehensive full-stack application for managing stock orders in a Brokage firm with modern web interface and robust REST APIs.
 
 </div>
 

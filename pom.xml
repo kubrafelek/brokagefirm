@@ -12,7 +12,7 @@
     <artifactId>brokagefirm</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>brokagefirm</name>
-    <description>Brokerage firm backend API for stock order management</description>
+    <description>Brokage firm backend API for stock order management</description>
     <url/>
     <licenses>
         <license/>

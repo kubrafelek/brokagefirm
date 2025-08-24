@@ -16,7 +16,7 @@ public class OpenAPIConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Brokerage Firm API")
+                        .title("Brokage Firm API")
                         .description("Stock order management system API for managing customers, assets, and trading orders")
                         .version("1.0.0")
                         .contact(new Contact()

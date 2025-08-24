@@ -1,4 +1,4 @@
--- Sample data for brokerage firm application
+-- Sample data for Brokage firm application
 
 -- Insert Users (passwords are encoded with BCrypt)
 -- admin password: admin123
