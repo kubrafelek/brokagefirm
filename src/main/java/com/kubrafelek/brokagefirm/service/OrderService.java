@@ -47,6 +47,7 @@ public class OrderService {
                 userId, assetName, side, size, price);
 
         validateOrderParameters(assetName, size, price);
+        validateUserBalance(userId, assetName, side, size, price);
 
         BigDecimal totalAmount = size.multiply(price);
         logger.info("Calculated total amount for order: {}", totalAmount);
@@ -88,6 +89,21 @@ public class OrderService {
         }
         if (price == null || price.compareTo(MIN_PRICE) < 0) {
             throw new InvalidOrderException("Minimum price is " + MIN_PRICE + " TRY");
+        }
+    }
+
+    private void validateUserBalance(Long userId, String assetName, OrderSide side, BigDecimal size, BigDecimal price) {
+        BigDecimal totalAmount = size.multiply(price);
+        if (side == OrderSide.BUY) {
+            Optional<Asset> tryAssetOpt = assetRepository.findByUserIdAndAssetName(userId, TRY_ASSET);
+            if (tryAssetOpt.isEmpty() || tryAssetOpt.get().getUsableSize().compareTo(totalAmount) < 0) {
+                throw new InvalidOrderException("Insufficient TRY balance for the order");
+            }
+        } else {
+            Optional<Asset> assetOpt = assetRepository.findByUserIdAndAssetName(userId, assetName);
+            if (assetOpt.isEmpty() || assetOpt.get().getUsableSize().compareTo(size) < 0) {
+                throw new InvalidOrderException("Insufficient asset balance for the order");
+            }
         }
     }
 
