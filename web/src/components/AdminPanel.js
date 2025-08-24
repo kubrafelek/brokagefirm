@@ -28,6 +28,10 @@ const AdminPanel = ({ user }) => {
   const [availableCustomers, setAvailableCustomers] = useState([]);
   const [availableAssets, setAvailableAssets] = useState([]);
 
+  // Filter state for orders
+  const [filterCustomer, setFilterCustomer] = useState('');
+  const [filterAsset, setFilterAsset] = useState('');
+
   useEffect(() => {
     fetchAdminData();
     fetchAvailableAssets();
@@ -156,6 +160,12 @@ const AdminPanel = ({ user }) => {
     return side === 'BUY' ? 'success' : 'danger';
   };
 
+  // Filtered orders based on selected customer and asset
+  const filteredOrders = allOrders.filter(order => {
+    return (!filterCustomer || order.userId === filterCustomer) &&
+           (!filterAsset || order.assetName === filterAsset);
+  });
+
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -230,76 +240,134 @@ const AdminPanel = ({ user }) => {
         <Tab eventKey="orders" title="All Orders">
           <Card>
             <Card.Header>
-              <h5 className="mb-0">All Orders Management</h5>
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">All Orders Management</h5>
+                <div className="d-flex gap-2">
+                  <Form.Select
+                    style={{ width: '150px' }}
+                    value={filterCustomer}
+                    onChange={(e) => setFilterCustomer(e.target.value)}
+                  >
+                    <option value="">All Customers</option>
+                    {customers.map(customerId => (
+                      <option key={customerId} value={customerId}>
+                        Customer {customerId}
+                      </option>
+                    ))}
+                  </Form.Select>
+                  <Form.Select
+                    style={{ width: '120px' }}
+                    value={filterAsset}
+                    onChange={(e) => setFilterAsset(e.target.value)}
+                  >
+                    <option value="">All Assets</option>
+                    {availableAssets.map(asset => (
+                      <option key={asset} value={asset}>
+                        {asset}
+                      </option>
+                    ))}
+                  </Form.Select>
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={() => {
+                      setFilterCustomer('');
+                      setFilterAsset('');
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                </div>
+              </div>
             </Card.Header>
             <Card.Body>
-              {allOrders.length === 0 ? (
-                <Alert variant="info">No orders found</Alert>
+              {filteredOrders.length === 0 ? (
+                <Alert variant="info">
+                  {filterCustomer || filterAsset
+                    ? "No orders found matching the selected filters"
+                    : "No orders found"
+                  }
+                </Alert>
               ) : (
-                <Table responsive hover>
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Customer ID</th>
-                      <th>Asset</th>
-                      <th>Side</th>
-                      <th>Size</th>
-                      <th>Price</th>
-                      <th>Status</th>
-                      <th>Created</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {allOrders.map((order) => (
-                      <tr key={order.id}>
-                        <td>#{order.id}</td>
-                        <td>{order.userId}</td>
-                        <td><strong>{order.assetName}</strong></td>
-                        <td>
-                          <Badge bg={getSideBadgeClass(order.orderSide)}>
-                            {order.orderSide}
-                          </Badge>
-                        </td>
-                        <td>{parseFloat(order.size).toLocaleString()}</td>
-                        <td>₺{parseFloat(order.price).toLocaleString()}</td>
-                        <td>
-                          <Badge bg={getStatusBadgeClass(order.status)}>
-                            {order.status}
-                          </Badge>
-                        </td>
-                        <td>
-                          {order.createDate ? new Date(order.createDate).toLocaleDateString() : 'N/A'}
-                        </td>
-                        <td>
-                          <div className="d-flex gap-1">
-                            {order.status === 'PENDING' && (
-                              <>
-                                <Button
-                                  variant="outline-success"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedOrder(order);
-                                    setShowMatchModal(true);
-                                  }}
-                                >
-                                  Match
-                                </Button>
-                                <Button
-                                  variant="outline-danger"
-                                  size="sm"
-                                  onClick={() => handleCancelOrder(order.id)}
-                                >
-                                  Cancel
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </td>
+                <>
+                  {(filterCustomer || filterAsset) && (
+                    <Alert variant="info" className="mb-3">
+                      <strong>Filters Applied:</strong>
+                      {filterCustomer && ` Customer ${filterCustomer}`}
+                      {filterCustomer && filterAsset && " • "}
+                      {filterAsset && ` Asset ${filterAsset}`}
+                      <span className="ms-2">({filteredOrders.length} order{filteredOrders.length !== 1 ? 's' : ''} found)</span>
+                    </Alert>
+                  )}
+                  <Table responsive hover>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Customer ID</th>
+                        <th>Asset</th>
+                        <th>Side</th>
+                        <th>Size</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </Table>
+                    </thead>
+                    <tbody>
+                      {filteredOrders.map((order) => (
+                        <tr key={order.id}>
+                          <td>#{order.id}</td>
+                          <td>
+                            <Badge bg="secondary" className="me-1">
+                              {order.userId}
+                            </Badge>
+                          </td>
+                          <td><strong>{order.assetName}</strong></td>
+                          <td>
+                            <Badge bg={getSideBadgeClass(order.orderSide)}>
+                              {order.orderSide}
+                            </Badge>
+                          </td>
+                          <td>{parseFloat(order.size).toLocaleString()}</td>
+                          <td>₺{parseFloat(order.price).toLocaleString()}</td>
+                          <td>
+                            <Badge bg={getStatusBadgeClass(order.status)}>
+                              {order.status}
+                            </Badge>
+                          </td>
+                          <td>
+                            {order.createDate ? new Date(order.createDate).toLocaleDateString() : 'N/A'}
+                          </td>
+                          <td>
+                            <div className="d-flex gap-1">
+                              {order.status === 'PENDING' && (
+                                <>
+                                  <Button
+                                    variant="outline-success"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedOrder(order);
+                                      setShowMatchModal(true);
+                                    }}
+                                  >
+                                    Match
+                                  </Button>
+                                  <Button
+                                    variant="outline-danger"
+                                    size="sm"
+                                    onClick={() => handleCancelOrder(order.id)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </>
               )}
             </Card.Body>
           </Card>
@@ -396,46 +464,170 @@ const AdminPanel = ({ user }) => {
               ) : customerAssets.length === 0 ? (
                 <Alert variant="warning">No assets found for selected customer</Alert>
               ) : (
-                <Table responsive>
-                  <thead>
-                    <tr>
-                      <th>Asset</th>
-                      <th>Total Size</th>
-                      <th>Usable Size</th>
-                      <th>Reserved</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {customerAssets.map((asset, index) => {
-                      const reserved = parseFloat(asset.size) - parseFloat(asset.usableSize);
-                      return (
-                        <tr key={index}>
-                          <td><strong>{asset.assetName}</strong></td>
-                          <td>
-                            {parseFloat(asset.size).toLocaleString()}
-                            {asset.assetName === 'TRY' && ' ₺'}
-                          </td>
-                          <td className="text-success">
-                            {parseFloat(asset.usableSize).toLocaleString()}
-                            {asset.assetName === 'TRY' && ' ₺'}
-                          </td>
-                          <td className={reserved > 0 ? 'text-warning' : 'text-muted'}>
-                            {reserved.toLocaleString()}
-                            {asset.assetName === 'TRY' && ' ₺'}
-                          </td>
-                          <td>
-                            {reserved > 0 ? (
-                              <Badge bg="warning" text="dark">Reserved</Badge>
-                            ) : (
-                              <Badge bg="success">Available</Badge>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </Table>
+                <>
+                  {/* TRY (Cash) Assets Table */}
+                  <div className="mb-4">
+                    <h6 className="text-success mb-3">
+                      <i className="bi bi-cash-coin me-2"></i>
+                      💰 Cash Holdings (TRY)
+                    </h6>
+                    {customerAssets.filter(asset => asset.assetName === 'TRY').length === 0 ? (
+                      <Alert variant="info" className="mb-3">
+                        No cash holdings found for Customer {selectedCustomer}
+                      </Alert>
+                    ) : (
+                      <Table responsive striped className="mb-4">
+                        <thead className="table-success">
+                          <tr>
+                            <th>Asset</th>
+                            <th>Total Balance</th>
+                            <th>Usable Balance</th>
+                            <th>Reserved Amount</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {customerAssets
+                            .filter(asset => asset.assetName === 'TRY')
+                            .map((asset, index) => {
+                              const reserved = parseFloat(asset.size) - parseFloat(asset.usableSize);
+                              return (
+                                <tr key={index}>
+                                  <td>
+                                    <div className="d-flex align-items-center">
+                                      <span className="me-2">💰</span>
+                                      <strong className="text-success">{asset.assetName}</strong>
+                                    </div>
+                                  </td>
+                                  <td className="fw-bold">
+                                    ₺{parseFloat(asset.size).toLocaleString()}
+                                  </td>
+                                  <td className="text-success fw-bold">
+                                    ₺{parseFloat(asset.usableSize).toLocaleString()}
+                                  </td>
+                                  <td className={reserved > 0 ? 'text-warning fw-bold' : 'text-muted'}>
+                                    ₺{reserved.toLocaleString()}
+                                  </td>
+                                  <td>
+                                    {reserved > 0 ? (
+                                      <Badge bg="warning" text="dark">
+                                        ₺{reserved.toLocaleString()} Reserved
+                                      </Badge>
+                                    ) : (
+                                      <Badge bg="success">Fully Available</Badge>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </Table>
+                    )}
+                  </div>
+
+                  {/* Stock Assets Table */}
+                  <div>
+                    <h6 className="text-primary mb-3">
+                      <i className="bi bi-graph-up me-2"></i>
+                      📈 Stock Holdings
+                    </h6>
+                    {customerAssets.filter(asset => asset.assetName !== 'TRY').length === 0 ? (
+                      <Alert variant="info">
+                        No stock holdings found for Customer {selectedCustomer}
+                      </Alert>
+                    ) : (
+                      <Table responsive striped>
+                        <thead className="table-primary">
+                          <tr>
+                            <th>Stock Symbol</th>
+                            <th>Total Shares</th>
+                            <th>Usable Shares</th>
+                            <th>Reserved Shares</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {customerAssets
+                            .filter(asset => asset.assetName !== 'TRY')
+                            .map((asset, index) => {
+                              const reserved = parseFloat(asset.size) - parseFloat(asset.usableSize);
+                              const getStockIcon = (symbol) => {
+                                const icons = {
+                                  'AAPL': '🍎',
+                                  'GOOGL': '🔍',
+                                  'MSFT': '🖥️',
+                                  'NVDA': '🎮',
+                                  'TSLA': '🚗'
+                                };
+                                return icons[symbol] || '📈';
+                              };
+
+                              return (
+                                <tr key={index}>
+                                  <td>
+                                    <div className="d-flex align-items-center">
+                                      <span className="me-2">{getStockIcon(asset.assetName)}</span>
+                                      <strong className="text-primary">{asset.assetName}</strong>
+                                    </div>
+                                  </td>
+                                  <td className="fw-bold">
+                                    {parseFloat(asset.size).toLocaleString()}
+                                  </td>
+                                  <td className="text-success fw-bold">
+                                    {parseFloat(asset.usableSize).toLocaleString()}
+                                  </td>
+                                  <td className={reserved > 0 ? 'text-warning fw-bold' : 'text-muted'}>
+                                    {reserved.toLocaleString()}
+                                  </td>
+                                  <td>
+                                    {reserved > 0 ? (
+                                      <Badge bg="warning" text="dark">
+                                        {reserved.toLocaleString()} Reserved
+                                      </Badge>
+                                    ) : (
+                                      <Badge bg="success">Fully Available</Badge>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </Table>
+                    )}
+                  </div>
+
+                  {/* Summary Card */}
+                  <Card className="mt-4 bg-light">
+                    <Card.Body>
+                      <Row>
+                        <Col md={4}>
+                          <div className="text-center">
+                            <h6 className="text-muted mb-1">Total Cash</h6>
+                            <h5 className="text-success mb-0">
+                              ₺{(customerAssets.find(a => a.assetName === 'TRY')?.size || 0).toLocaleString()}
+                            </h5>
+                          </div>
+                        </Col>
+                        <Col md={4}>
+                          <div className="text-center">
+                            <h6 className="text-muted mb-1">Available Cash</h6>
+                            <h5 className="text-success mb-0">
+                              ₺{(customerAssets.find(a => a.assetName === 'TRY')?.usableSize || 0).toLocaleString()}
+                            </h5>
+                          </div>
+                        </Col>
+                        <Col md={4}>
+                          <div className="text-center">
+                            <h6 className="text-muted mb-1">Stock Holdings</h6>
+                            <h5 className="text-primary mb-0">
+                              {customerAssets.filter(a => a.assetName !== 'TRY').length} Stocks
+                            </h5>
+                          </div>
+                        </Col>
+                      </Row>
+                    </Card.Body>
+                  </Card>
+                </>
               )}
             </Card.Body>
           </Card>
